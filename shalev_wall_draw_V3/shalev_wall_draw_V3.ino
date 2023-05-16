@@ -1,5 +1,5 @@
 // polargraph code edited by shalev: 
-//1
+
 
 #include <stdlib.h>
 
