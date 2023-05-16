@@ -25,13 +25,32 @@ const int speedOFbuttons = 1000; // set speed each motor movement
 const int stepsPerMotor = 10; // set the number of steps for each motor movement
 //------------------------------------------------------------------------------
 
-
 // movement for the homing procces 
 //------------------------------------------------------------------------------
-#define DELAY_PER_STEP 8000 // set speed to the motors 
+#define SpeedOfHoming 8000 // set speed to the motors 
 #define NUM_STEPS 20    // chage this to change the number of steps per push of a button
 //------------------------------------------------------------------------------
+//set motor speed: MoveTo command !!
+int motorSpeed = 300; //homing
+int motorSpeed1 = 100; // movment of the head
+//------------------------------------------------------------------------------
 
+#define X_SEPARATION  1470    //The horizontal distance above the two ropes mm       
+
+#define LIMXMAX       ( X_SEPARATION*0.5)  //x-axis maximum value 0 is at the center of the artboard
+
+#define LIMXMIN       (-X_SEPARATION*0.5)  //x-axis minimum
+
+#define LIMYMAX         (-520)   //The maximum value of the y-axis is at the bottom of the drawing board
+
+#define LIMYMIN         (520)  //The minimum value of the y-axis is the vertical distance from the fixed point of the left and right lines to the pen at the top of the drawing board. 
+//Try to measure and place it accurately, and there will be distortion if the error is too large
+//When the value is reduced, the drawing becomes thinner and taller, and when the value is increased, the drawing becomes short and fat
+
+// the following variables are unsigned longs because the time, measured in
+
+// milliseconds, will quickly become a bigger number than can be stored in an int.
+//------------------------------------------------------------------------------
 
 #define LS_LEFT_PIN  (A0) // switch for homing left motor
 
@@ -62,19 +81,12 @@ const int buttonPins[] = {12, 9, A2, A3, 10, 11}; // define button pins
 const int numButtons = sizeof(buttonPins) / sizeof(buttonPins[0]); // get the number of buttons
 
 
-
-
 // Define constants for motor direction
 
 #define CLOCKWISE 0
 
 #define COUNTER_CLOCKWISE 1
 
-
-//set motor speed:
-
-int motorSpeed = 300; //homing
-int motorSpeed1 = 100; // movment of the head
 unsigned long previousMillis = 0;
 
 const long interval = 2000;
@@ -100,22 +112,6 @@ const long interval = 2000;
 #define M2_REEL_IN      1     
 
 static long laststep1, laststep2; 
-
-#define X_SEPARATION  1470    //The horizontal distance above the two ropes mm       
-
-#define LIMXMAX       ( X_SEPARATION*0.5)  //x-axis maximum value 0 is at the center of the artboard
-
-#define LIMXMIN       (-X_SEPARATION*0.5)  //x-axis minimum
-
-#define LIMYMAX         (-520)   //The maximum value of the y-axis is at the bottom of the drawing board
-
-#define LIMYMIN         (520)  //The minimum value of the y-axis is the vertical distance from the fixed point of the left and right lines to the pen at the top of the drawing board. 
-//Try to measure and place it accurately, and there will be distortion if the error is too large
-//When the value is reduced, the drawing becomes thinner and taller, and when the value is increased, the drawing becomes short and fat
-
-// the following variables are unsigned longs because the time, measured in
-
-// milliseconds, will quickly become a bigger number than can be stored in an int.
 
 unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 
@@ -671,9 +667,9 @@ void moveMotor(int dirPin, int stepPin, int steps, bool clockwise) {
   digitalWrite(dirPin, clockwise ? HIGH : LOW); // set motor direction
   for(int i = 0; i < steps; i++) {
     digitalWrite(stepPin, HIGH);
-    delayMicroseconds(DELAY_PER_STEP);
+    delayMicroseconds(SpeedOfHoming);
     digitalWrite(stepPin, LOW);
-    delayMicroseconds(DELAY_PER_STEP);
+    delayMicroseconds(SpeedOfHoming);
   }
 }
 
