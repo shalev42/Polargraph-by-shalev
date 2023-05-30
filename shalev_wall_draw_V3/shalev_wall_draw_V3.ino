@@ -7,7 +7,6 @@
 
 #include <time.h>
 
-
 #define X_DIR_PIN 2
 
 #define X_STEP_PIN 5
@@ -25,6 +24,7 @@ const int SpeedOFMotors = 500; // set speed each motor movement
 const int stepsPerMotor = 1; // set the number of steps for each motor movement
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+
 
 #define X_SEPARATION  1300    //The horizontal distance above the two ropes mm       
 
@@ -47,12 +47,6 @@ const int stepsPerMotor = 1; // set the number of steps for each motor movement
 
 #define LS_RIGHT_PIN  (A0)// switch for homing right motor
 
-
-#define DEBOUNCE_DELAY 3000
-
-#define STEP_DELAY 600
-
-
 int xDirection = 1;
 
 int yDirection = 1;
@@ -61,14 +55,8 @@ int xPotValue = 0;
 
 int yPotValue = 0;
 
-unsigned long debounceDelay1 = 2000;
-
-unsigned long lastDebounceTime1 = 0;
-
-
-//int buttonPins[numButtons] = {12, 9, A2, A3, 10, 11};
-
 const int buttonPins[] = {12, 9, A2, A3, 10, 11}; // define button pins
+
 const int numButtons = sizeof(buttonPins) / sizeof(buttonPins[0]); // get the number of buttons
 
 
@@ -103,10 +91,6 @@ const long interval = 2000;
 #define M2_REEL_IN      1     
 
 static long laststep1, laststep2; 
-
-unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
-
-unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
 
 #define PEN_UP_ANGLE    160 
 
@@ -147,40 +131,24 @@ static int ps;
 
 #define MAX_BUF         (64)    
 
-//Servo pen;
-
-int penstatenow = 0;
-
-int lastpenstate = 1;
-
 int xstate = 0;
 
 int ystate = 0;
 
-int movment = 5;
 
 //------------------------------------------------------------------------------
 
 void move_step(int stepCount, int stepPin,int dirPin)
 {
-
   // set the axis direction  
-
   if (stepCount > 0){
-
       digitalWrite(dirPin, HIGH);
-
     }
-
   else{
-
     digitalWrite(dirPin, LOW);
-
     }
-
+    
     for (int i = 0; i < abs(stepCount); i++) {
-
-      
 
       // These four lines result in 1 step:
 
@@ -193,15 +161,11 @@ void move_step(int stepCount, int stepPin,int dirPin)
       delayMicroseconds(SpeedOFMotors);
 
     }
-
         //Serial.print("moved!");
-
   }
 
 
-
 //------------------------------------------------------------------------------
-
 
 // theta = acos((a*a+b*b-c*c)/(2*a*b));
 
@@ -243,60 +207,6 @@ void IK(float x,float y,long &l1, long &l2) {
 }
 
 //------------------------------------------------------------------------------
-void pen_state(int pen_st) {
-
-  if(pen_st==PEN_DOWN) {
-
-        ps=PEN_DOWN_ANGLE;
-
-        // Serial.println("Pen down");
-
-      } else {
-
-        ps=PEN_UP_ANGLE;
-
-        //Serial.println("Pen up");
-
-      }
-
-}
-//------------------------------------------------------------------------------
-
-void pen_down()
-
-{
-
-  if (ps==PEN_UP_ANGLE)
-
-  {
-
-    ps=PEN_DOWN_ANGLE;
-
-//    pen.write(ps);
-
-    delay(TPD);
-
-  }
-
-}
-//------------------------------------------------------------------------------
-
-void pen_up()
-
-{
-
-  if (ps==PEN_DOWN_ANGLE)
-
-  {
-
-    ps=PEN_UP_ANGLE;
-
-//    pen.write(ps);
-
-  }
-
-}
-//------------------------------------------------------------------------------
 
 // returns angle of dy/dx as a value from 0...2PI
 
@@ -336,79 +246,42 @@ static void teleport(float x, float y) {
 //------------------------------------------------------------------------------
 
 void moveto(float x,float y) {
-
     long l1,l2;
-
     IK(x,y,l1,l2);
-
     long d1 = l1 - laststep1;
-
     long d2 = l2 - laststep2;
-
     long ad1=abs(d1);
-
     long ad2=abs(d2);
-
     int dir1=d1>0 ? M1_REEL_IN : M1_REEL_OUT;
-
     int dir2=d2>0 ? M2_REEL_IN : M2_REEL_OUT;
-
     long over=0;
-
     long i;
-
   if(ad1>ad2) {
-
     for(i=0;i<ad1;++i) {
-
       move_step(dir1,X_STEP_PIN,X_DIR_PIN);
-
       over+=ad2;
-
       if(over>=ad1) {
-
         over-=ad1;
-
           move_step(dir2,Y_STEP_PIN,Y_DIR_PIN);
-
       }
-
       delayMicroseconds(SpeedOFMotors);
-
      }
-
   } 
-
   else {
-
     for(i=0;i<ad2;++i) {
-
         move_step(dir2,Y_STEP_PIN,Y_DIR_PIN);
-
       over+=ad1;
-
       if(over>=ad2) {
-
         over-=ad2;
-
         move_step(dir1,X_STEP_PIN,X_DIR_PIN);
-
       }
-
       delayMicroseconds(SpeedOFMotors);
-
     }
-
   }
-
   laststep1=l1;
-
   laststep2=l2;
-
   posx=x;
-
   posy=y;
-
 }
 //------------------------------------------------------------------------------
 
@@ -458,39 +331,7 @@ void line(float x,float y)
   line_safe(x,y);
 
 }
-//------------------------------------------------------------------------------
 
-void box(float xx,float yy,float dx,float dy)
-
-{
-
-  pen_up();
-
-  line_safe(xx , yy);
-
-  pen_down();
-
-  delay(TPD);
-
-  line_safe(xx + dx, yy);
-
-  delay(TPD);
-
-  line_safe(xx + dx, yy+ dy);
-
-  delay(TPD);
-
-  line_safe(xx , yy + dy);
-
-  delay(TPD);
-
-  line_safe(xx , yy);
-
-  pen_up();
-
-
-
-}
 //------------------------------------------------------------------------------
 
 void moveDown(int steps, int delayTime) 
@@ -636,17 +477,7 @@ void stepMotorLeft() {
 
 }
 
-//------------------------------------------------------------------------------
 
-void demo1()
-
-{
-
- box(100,0,90,90);
-
- //line(15,0);
-
-}
 //------------------------------------------------------------------------------
 
 // Generate random (x,y) coordinates within the given range and send them to the printer
