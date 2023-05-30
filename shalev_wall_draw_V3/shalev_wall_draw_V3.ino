@@ -21,29 +21,20 @@
 
 // main motors regular movement:
 //------------------------------------------------------------------------------
-const int speedOFbuttons = 1000; // set speed each motor movement
-const int stepsPerMotor = 10; // set the number of steps for each motor movement
+const int SpeedOFMotors = 500; // set speed each motor movement
+const int stepsPerMotor = 1; // set the number of steps for each motor movement
+//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-// movement for the homing procces 
-//------------------------------------------------------------------------------
-#define SpeedOfHoming 8000 // set speed to the motors 
-#define NUM_STEPS 20    // chage this to change the number of steps per push of a button
-//------------------------------------------------------------------------------
-//set motor speed: MoveTo command !!
-int motorSpeed = 300; //homing
-int motorSpeed1 = 100; // movment of the head
-//------------------------------------------------------------------------------
-
-#define X_SEPARATION  1470    //The horizontal distance above the two ropes mm       
+#define X_SEPARATION  1300    //The horizontal distance above the two ropes mm       
 
 #define LIMXMAX       ( X_SEPARATION*0.5)  //x-axis maximum value 0 is at the center of the artboard
 
 #define LIMXMIN       (-X_SEPARATION*0.5)  //x-axis minimum
 
-#define LIMYMAX         (-520)   //The maximum value of the y-axis is at the bottom of the drawing board
+#define LIMYMAX         (-500)   //The maximum value of the y-axis is at the bottom of the drawing board
 
-#define LIMYMIN         (520)  //The minimum value of the y-axis is the vertical distance from the fixed point of the left and right lines to the pen at the top of the drawing board. 
+#define LIMYMIN         (500)  //The minimum value of the y-axis is the vertical distance from the fixed point of the left and right lines to the pen at the top of the drawing board. 
 //Try to measure and place it accurately, and there will be distortion if the error is too large
 //When the value is reduced, the drawing becomes thinner and taller, and when the value is increased, the drawing becomes short and fat
 
@@ -52,9 +43,9 @@ int motorSpeed1 = 100; // movment of the head
 // milliseconds, will quickly become a bigger number than can be stored in an int.
 //------------------------------------------------------------------------------
 
-#define LS_LEFT_PIN  (A0) // switch for homing left motor
+#define LS_LEFT_PIN  (A1) // switch for homing left motor
 
-#define LS_RIGHT_PIN  (A1)// switch for homing right motor
+#define LS_RIGHT_PIN  (A0)// switch for homing right motor
 
 
 #define DEBOUNCE_DELAY 3000
@@ -195,11 +186,11 @@ void move_step(int stepCount, int stepPin,int dirPin)
 
       digitalWrite(stepPin, HIGH);
 
-      delayMicroseconds(motorSpeed);
+      delayMicroseconds(SpeedOFMotors);
 
       digitalWrite(stepPin, LOW);
 
-      delayMicroseconds(motorSpeed);
+      delayMicroseconds(SpeedOFMotors);
 
     }
 
@@ -382,7 +373,7 @@ void moveto(float x,float y) {
 
       }
 
-      delayMicroseconds(motorSpeed);
+      delayMicroseconds(SpeedOFMotors);
 
      }
 
@@ -404,7 +395,7 @@ void moveto(float x,float y) {
 
       }
 
-      delayMicroseconds(motorSpeed);
+      delayMicroseconds(SpeedOFMotors);
 
     }
 
@@ -538,7 +529,7 @@ void homing() {
 
   // Move the left motor clockwise until the left microswitch is pressed or timeout occurs
 
-  unsigned long timeout = millis() + 5000; // Set a timeout of 5 seconds
+  unsigned long timeout = millis() + 6000; // Set a timeout of 5 seconds
 
   while (digitalRead(LS_LEFT_PIN) == LOW && millis() < timeout) {
 
@@ -552,7 +543,7 @@ void homing() {
 
   // Move the right motor counter-clockwise until the right microswitch is pressed or timeout occurs
 
-  timeout = millis() + 5000; // Reset the timeout
+  timeout = millis() + 6000; // Reset the timeout
 
   while (digitalRead(LS_RIGHT_PIN) == LOW && millis() < timeout) {
 
@@ -582,7 +573,7 @@ void homing() {
 
   }
 
-  teleport(0, -400);
+  teleport(0, -200);
 
 }
 
@@ -604,15 +595,30 @@ void setDirectionLeft(int direction) {
 
 //------------------------------------------------------------------------------
 
+void where() {
+  Serial.print("X,Y=  ");
+  Serial.print(posx);
+  Serial.print(",");
+  Serial.print(posy);
+  Serial.print("\t");
+  Serial.print("Lst1,Lst2=  ");
+  Serial.print(laststep1);
+  Serial.print(",");
+  Serial.println(laststep2);
+  Serial.println("");
+}
+
+//------------------------------------------------------------------------------
+
 void stepMotorRight() {
 
   digitalWrite(X_STEP_PIN, HIGH);
 
-  delayMicroseconds(motorSpeed1); // Adjust this value to change motor speed
+  delayMicroseconds(SpeedOFMotors); // Adjust this value to change motor speed
 
   digitalWrite(X_STEP_PIN, LOW);
 
-  delayMicroseconds(motorSpeed1); // Adjust this value to change motor speed
+  delayMicroseconds(SpeedOFMotors); // Adjust this value to change motor speed
 
 }
 
@@ -622,11 +628,11 @@ void stepMotorLeft() {
 
   digitalWrite(Y_STEP_PIN, HIGH);
 
-  delayMicroseconds(motorSpeed1); // Adjust this value to change motor speed
+  delayMicroseconds(SpeedOFMotors); // Adjust this value to change motor speed
 
   digitalWrite(Y_STEP_PIN, LOW);
 
-  delayMicroseconds(motorSpeed1); // Adjust this value to change motor speed
+  delayMicroseconds(SpeedOFMotors); // Adjust this value to change motor speed
 
 }
 
@@ -667,9 +673,9 @@ void moveMotor(int dirPin, int stepPin, int steps, bool clockwise) {
   digitalWrite(dirPin, clockwise ? HIGH : LOW); // set motor direction
   for(int i = 0; i < steps; i++) {
     digitalWrite(stepPin, HIGH);
-    delayMicroseconds(SpeedOfHoming);
+    delayMicroseconds(SpeedOFMotors);
     digitalWrite(stepPin, LOW);
-    delayMicroseconds(SpeedOfHoming);
+    delayMicroseconds(SpeedOFMotors);
   }
 }
 
@@ -703,17 +709,17 @@ void setup() {
 
   // Move down by 100 steps with a delay of 700 microseconds between each step
   
-/*
-  moveDown(1400, 700);
+
+  //moveDown(1400, 700);
 
   homing();
 
-  moveto(0 ,120); // move to middle of the board
+  moveto(0 ,0); // move to middle of the board
 
   teleport(0, 0); // set position to (0,0) 
 
   //line_safe(0 ,100);
-*/ 
+
 
   Serial.println("homing done");
   
@@ -743,8 +749,9 @@ void setup() {
 void loop()
 
 {
-
+      where(); 
     //sendRandomCoordinates(0,30,-30,30);
+    
       
 
       // read button states and move motors accordingly
@@ -760,7 +767,7 @@ void loop()
               } else if (i == 3) {
                 moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor); // move X motor clockwise - right
               }
-              else if (i == 4) { //triangle
+              else if (i == 4) { //logo of the museume 
                    teleport(0, 0);
                     moveto(128.6423,75.0304);
                     moveto(108.1619,16.4679);
@@ -904,148 +911,6 @@ void loop()
                     moveto(20.92743,65.40784);
                     moveto(20.57275,64.48633);
                     moveto(0,5.896362);
-                    moveto(14.42737,0.830689);
-                    moveto(34.99634,59.4093);
-                    moveto(35.10809,59.66266);
-                    moveto(35.24414,59.87628);
-                    moveto(35.3963,60.05328);
-                    moveto(35.55634,60.19678);
-                    moveto(35.71588,60.30994);
-                    moveto(35.86664,60.39587);
-                    moveto(36.00055,60.4577);
-                    moveto(36.10913,60.49866);
-                    moveto(36.33319,60.55811);
-                    moveto(36.53265,60.58228);
-                    moveto(36.7077,60.57843);
-                    moveto(36.85858,60.55383);
-                    moveto(37.08893,60.47089);
-                    moveto(37.22571,60.39117);
-                    moveto(37.49963,60.16296);
-                    moveto(37.68616,59.88885);
-                    moveto(37.74896,59.7298);
-                    moveto(37.79266,59.55353);
-                    moveto(37.81818,59.35809);
-                    moveto(37.82654,59.14166);
-                    moveto(37.82654,16.7356);
-                    moveto(37.85834,15.65863);
-                    moveto(37.95325,14.5993);
-                    moveto(38.11017,13.55969);
-                    moveto(38.32806,12.54156);
-                    moveto(38.6059,11.54694);
-                    moveto(38.94269,10.5777);
-                    moveto(39.33734,9.635742);
-                    moveto(39.78888,8.723022);
-                    moveto(40.29633,7.841492);
-                    moveto(40.85846,6.992981);
-                    moveto(41.47449,6.179504);
-                    moveto(42.14325,5.402893);
-                    moveto(42.86371,4.665161);
-                    moveto(43.63501,3.96814);
-                    moveto(44.45593,3.313782);
-                    moveto(45.32544,2.704102);
-                    moveto(46.13623,2.204163);
-                    moveto(46.96808,1.754639);
-                    moveto(47.81903,1.355713);
-                    moveto(48.68707,1.007629);
-                    moveto(49.57025,0.710693);
-                    moveto(50.46661,0.465088);
-                    moveto(51.37421,0.271118);
-                    moveto(52.29102,0.129089);
-                    moveto(53.21509,0.039124);
-                    moveto(54.14447,0.001465);
-                    moveto(55.07715,0.016479);
-                    moveto(56.01117,0.08429);
-                    moveto(56.94458,0.205261);
-                    moveto(57.87543,0.379578);
-                    moveto(58.8017,0.607483);
-                    moveto(59.72144,0.889282);
-                    moveto(60.64728,1.230835);
-                    moveto(61.54517,1.620972);
-                    moveto(62.41376,2.058289);
-                    moveto(63.2514,2.541382);
-                    moveto(64.05695,3.068848);
-                    moveto(64.82867,3.639221);
-                    moveto(65.56525,4.25116);
-                    moveto(66.2652,4.903198);
-                    moveto(66.92706,5.593933);
-                    moveto(67.54944,6.321899);
-                    moveto(68.13086,7.085754);
-                    moveto(68.66986,7.884094);
-                    moveto(69.16498,8.715515);
-                    moveto(69.61475,9.578491);
-                    moveto(70.01776,10.47168);
-                    moveto(70.37256,11.39368);
-                    moveto(87.21021,59.4093);
-                    moveto(87.32196,59.66266);
-                    moveto(87.45801,59.87628);
-                    moveto(87.61017,60.05328);
-                    moveto(87.7702,60.19678);
-                    moveto(87.92975,60.30994);
-                    moveto(88.08051,60.39587);
-                    moveto(88.21442,60.4577);
-                    moveto(88.323,60.49866);
-                    moveto(88.54706,60.55811);
-                    moveto(88.74652,60.58228);
-                    moveto(88.92157,60.57843);
-                    moveto(89.07257,60.55383);
-                    moveto(89.30292,60.47089);
-                    moveto(89.43921,60.39117);
-                    moveto(89.71332,60.16315);
-                    moveto(89.89996,59.88916);
-                    moveto(89.96283,59.73004);
-                    moveto(90.00653,59.55377);
-                    moveto(90.03204,59.35822);
-                    moveto(90.04041,59.14166);
-                    moveto(90.04041,16.7356);
-                    moveto(90.0722,15.65863);
-                    moveto(90.16711,14.5993);
-                    moveto(90.32404,13.55969);
-                    moveto(90.54193,12.54156);
-                    moveto(90.81976,11.54694);
-                    moveto(91.15656,10.5777);
-                    moveto(91.55121,9.635742);
-                    moveto(92.00275,8.723022);
-                    moveto(92.51019,7.841492);
-                    moveto(93.07233,6.992981);
-                    moveto(93.68835,6.179504);
-                    moveto(94.35712,5.402893);
-                    moveto(95.07758,4.665161);
-                    moveto(95.84888,3.96814);
-                    moveto(96.6698,3.313782);
-                    moveto(97.53931,2.704102);
-                    moveto(98.57849,2.074585);
-                    moveto(99.65106,1.527283);
-                    moveto(100.7531,1.062805);
-                    moveto(101.8803,0.68158);
-                    moveto(103.0286,0.384216);
-                    moveto(104.194,0.171082);
-                    moveto(105.3724,0.042847);
-                    moveto(106.5596,0);
-                    moveto(107.2341,0.013794);
-                    moveto(107.9093,0.055237);
-                    moveto(108.5846,0.12439);
-                    moveto(109.2592,0.221375);
-                    moveto(109.9323,0.346252);
-                    moveto(110.6031,0.499207);
-                    moveto(111.2711,0.680176);
-                    moveto(111.9353,0.889282);
-                    moveto(112.8611,1.230835);
-                    moveto(113.759,1.620972);
-                    moveto(114.6276,2.058289);
-                    moveto(115.4653,2.541443);
-                    moveto(116.2708,3.069031);
-                    moveto(117.0427,3.639587);
-                    moveto(117.7794,4.251648);
-                    moveto(118.4794,4.903992);
-                    moveto(119.1414,5.595032);
-                    moveto(119.7639,6.323425);
-                    moveto(120.3455,7.08783);
-                    moveto(120.8848,7.88678);
-                    moveto(121.3801,8.718811);
-                    moveto(121.8303,9.582642);
-                    moveto(122.2336,10.47681);
-                    moveto(122.5889,11.3999);
-                    moveto(143.0765,69.98267);
                     moveto(0,0);
 
 
@@ -1070,9 +935,9 @@ void loop()
           digitalWrite(dirPin, steps > 0 ? HIGH : LOW); // set motor direction based on sign of steps
           for (int i = 0; i < abs(steps); i++) {
             digitalWrite(stepPin, HIGH);
-            delayMicroseconds(speedOFbuttons);
+            delayMicroseconds(SpeedOFMotors);
             digitalWrite(stepPin, LOW);
-            delayMicroseconds(speedOFbuttons);
+            delayMicroseconds(SpeedOFMotors);
   }
 }
 
