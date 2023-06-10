@@ -20,7 +20,7 @@
 
 // main motors regular movement:
 //------------------------------------------------------------------------------
-const int SpeedOFMotors = 500; // set speed each motor movement
+const int SpeedOFMotors = 800; // set speed each motor movement
 const int stepsPerMotor = 1; // set the number of steps for each motor movement
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -50,10 +50,6 @@ const int stepsPerMotor = 1; // set the number of steps for each motor movement
 int xDirection = 1;
 
 int yDirection = 1;
-
-int xPotValue = 0;
-
-int yPotValue = 0;
 
 const int buttonPins[] = {12, 9, A2, A3, 10, 11}; // define button pins
 
@@ -92,6 +88,38 @@ const long interval = 2000;
 
 static long laststep1, laststep2; 
 
+// parameters for manual movement:
+
+int lenMax = 1300; // length max of the belt
+int lenMin = -1300;  // length min of the belt
+long lenCountx = 0;
+long lenCounty = 0;
+
+
+// parameters for manual coordinates:
+long disx = 0;
+long disy = 0;
+
+/*
+long disx = 75;
+long disy = 60;
+long alfa = 38.659;
+long beta = 11.31;
+
+  // Calculate new alfa
+  double tan_alfa = disy / (disx - 70.0);
+  double radian_alfa = atan(tan_alfa);
+  alfa = radian_alfa * 180 / PI;
+
+  // Calculate new beta
+  double tan_beta = disy / (130.0 - disx);
+  double radian_beta = atan(tan_beta);
+  beta = radian_beta * 180 / PI;
+  
+*/
+
+
+/* 
 #define PEN_UP_ANGLE    160 
 
 #define PEN_DOWN_ANGLE  100  
@@ -99,6 +127,7 @@ static long laststep1, laststep2;
 #define PEN_DOWN 1  
 
 #define PEN_UP 0    
+*/
 
 struct point { 
 
@@ -114,10 +143,9 @@ struct point {
 struct point actuatorPos;
 
 // plotter position 
+float posx;
 
-static float posx;
-
-static float posy;
+float posy;
 
 static float posz;  // pen state
 
@@ -131,9 +159,9 @@ static int ps;
 
 #define MAX_BUF         (64)    
 
-int xstate = 0;
+int xstate;
 
-int ystate = 0;
+int ystate;
 
 
 //------------------------------------------------------------------------------
@@ -250,12 +278,16 @@ void moveto(float x,float y) {
     IK(x,y,l1,l2);
     long d1 = l1 - laststep1;
     long d2 = l2 - laststep2;
+    
     long ad1=abs(d1);
     long ad2=abs(d2);
+    
     int dir1=d1>0 ? M1_REEL_IN : M1_REEL_OUT;
     int dir2=d2>0 ? M2_REEL_IN : M2_REEL_OUT;
     long over=0;
     long i;
+
+    
   if(ad1>ad2) {
     for(i=0;i<ad1;++i) {
       move_step(dir1,X_STEP_PIN,X_DIR_PIN);
@@ -280,9 +312,13 @@ void moveto(float x,float y) {
   }
   laststep1=l1;
   laststep2=l2;
-  posx=x;
-  posy=y;
+  posx = x;
+  posy = y;
+  Serial.println("move to: ");
+  Serial.println(posx);
+  Serial.println(posy);  
 }
+
 //------------------------------------------------------------------------------
 
 static void line_safe(float x,float y) {
@@ -437,12 +473,12 @@ void setDirectionLeft(int direction) {
 //------------------------------------------------------------------------------
 
 void where() {
-  Serial.print("X,Y=  ");
+  Serial.print("X,Y = ");
   Serial.print(posx);
   Serial.print(",");
   Serial.print(posy);
   Serial.print("\t");
-  Serial.print("Lst1,Lst2=  ");
+  Serial.print("LastStep1, LastStep2 = ");
   Serial.print(laststep1);
   Serial.print(",");
   Serial.println(laststep2);
@@ -509,49 +545,27 @@ void moveMotor(int dirPin, int stepPin, int steps, bool clockwise) {
     delayMicroseconds(SpeedOFMotors);
   }
 }
-
-
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-
 void setup() {
-  
   Serial.begin(BAUD);
-
   Serial.println("Booting...");
-
   pinMode(Y_DIR_PIN, OUTPUT);
-
   pinMode(Y_STEP_PIN, OUTPUT);
-
   pinMode(X_DIR_PIN, OUTPUT);
-
   pinMode(X_STEP_PIN, OUTPUT);
-
   pinMode(LS_LEFT_PIN, INPUT_PULLUP);
-
   pinMode(LS_RIGHT_PIN, INPUT_PULLUP);
-
   Serial.println("Booting complete, start homing...");
 
-
   // Start homing
-
-  // Move down by 100 steps with a delay of 700 microseconds between each step
-  
-
   //moveDown(1400, 700);
-
-  homing();
-
-  moveto(0 ,0); // move to middle of the board
-
+  //homing();
+  //moveto(0 ,0); // move to middle of the board
   teleport(0, 0); // set position to (0,0) 
 
   //line_safe(0 ,100);
-
-
   Serial.println("homing done");
   
   for (int i = 0; i < numButtons; i++) {
@@ -580,175 +594,76 @@ void setup() {
 void loop()
 
 {
-      where(); 
     //sendRandomCoordinates(0,30,-30,30);
-    
-      
+/*
+int lenMax = 2500; // length max of the belt
+int lenMin = -2500;  // length min of the belt
+long lenCountx = 0;
+long lenCounty = 0;
 
+ */
       // read button states and move motors accordingly
           for (int i = 0; i < numButtons; i++) {
             int state = digitalRead(buttonPins[i]);
             if (state == LOW) {
               if (i == 0) {
-                moveMotor(Y_DIR_PIN, Y_STEP_PIN, -stepsPerMotor); // move Y motor counter-clockwise - down
-              } else if (i == 1) {
-                moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor); // move Y motor clockwise - up
-              } else if (i == 2) {
-                moveMotor(X_DIR_PIN, X_STEP_PIN, -stepsPerMotor); // move X motor counter-clockwise - left
-              } else if (i == 3) {
-                moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor); // move X motor clockwise - right
+                if (lenCounty < lenMax ){
+                  moveMotor(Y_DIR_PIN, Y_STEP_PIN, -stepsPerMotor); // move Y motor counter-clockwise - up y 
+                  lenCounty = lenCounty + 1;
+                  Serial.println(lenCounty);
+                  }
+                else {
+                  Serial.println("Max y up");
+                  }
+              } 
+              
+              else if (i == 1) {
+                if (lenCounty > lenMin){
+                  moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor); // move Y motor clockwise - down y
+                  lenCounty = lenCounty - 1;
+                  Serial.println(lenCounty);
+                  }
+                else {
+                  Serial.println("Max y down");
+                  }
+              } 
+
+              else if (i == 2) {
+                if (lenCountx > lenMin ){
+                  moveMotor(X_DIR_PIN, X_STEP_PIN, -stepsPerMotor); // move X motor counter-clockwise - up x
+                  lenCountx = lenCountx - 1;
+                  Serial.println(lenCountx);
+                  }
+                  else {
+                    Serial.println("Max x down");
+                  }
+              } 
+              
+              else if (i == 3) {
+                if (lenCountx < lenMax ){
+                  moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor); // move X motor clockwise - up y
+                  lenCountx = lenCountx + 1;
+                  Serial.println(lenCountx);
+                  }
+                  else {
+                    Serial.println("Max x up");
+                  }
               }
-              else if (i == 4) { //logo of the museume 
-                   teleport(0, 0);
-                    moveto(128.6423,75.0304);
-                    moveto(108.1619,16.4679);
-                    moveto(108.0501,16.21454);
-                    moveto(107.914,16.00098);
-                    moveto(107.7618,15.82404);
-                    moveto(107.6019,15.68054);
-                    moveto(107.4423,15.56738);
-                    moveto(107.2914,15.48145);
-                    moveto(107.1576,15.41962);
-                    moveto(107.0491,15.37866);
-                    moveto(106.8253,15.31909);
-                    moveto(106.6261,15.29474);
-                    moveto(106.4511,15.2984);
-                    moveto(106.3002,15.32294);
-                    moveto(106.0696,15.40588);
-                    moveto(105.9329,15.48608);
-                    moveto(105.6587,15.71411);
-                    moveto(105.4721,15.98816);
-                    moveto(105.4094,16.14722);
-                    moveto(105.3657,16.32355);
-                    moveto(105.3401,16.51904);
-                    moveto(105.3318,16.7356);
-                    moveto(105.3318,59.14166);
-                    moveto(105.2999,60.21869);
-                    moveto(105.205,61.27795);
-                    moveto(105.0482,62.31763);
-                    moveto(104.8302,63.33575);
-                    moveto(104.5524,64.33038);
-                    moveto(104.2156,65.29962);
-                    moveto(103.8209,66.24158);
-                    moveto(103.3693,67.15424);
-                    moveto(102.8619,68.03583);
-                    moveto(102.2997,68.88434);
-                    moveto(101.6837,69.69781);
-                    moveto(101.0149,70.47443);
-                    moveto(100.2944,71.21216);
-                    moveto(99.52313,71.90912);
-                    moveto(98.70215,72.56348);
-                    moveto(97.83252,73.17322);
-                    moveto(97.02167,73.67316);
-                    moveto(96.18976,74.12268);
-                    moveto(95.33881,74.52167);
-                    moveto(94.47076,74.86969);
-                    moveto(93.58752,75.16656);
-                    moveto(92.6911,75.41217);
-                    moveto(91.78351,75.60614);
-                    moveto(90.86664,75.74823);
-                    moveto(89.9425,75.8382);
-                    moveto(89.01312,75.87579);
-                    moveto(88.08044,75.86078);
-                    moveto(87.14642,75.79297);
-                    moveto(86.21307,75.672);
-                    moveto(85.28229,75.49768);
-                    moveto(84.35602,75.26978);
-                    moveto(83.4364,74.98804);
-                    moveto(82.51062,74.64648);
-                    moveto(81.61279,74.25635);
-                    moveto(80.74432,73.81903);
-                    moveto(79.90668,73.33594);
-                    moveto(79.10126,72.80847);
-                    moveto(78.32959,72.2381);
-                    moveto(77.59308,71.62616);
-                    moveto(76.89313,70.97412);
-                    moveto(76.23126,70.28339);
-                    moveto(75.60895,69.55536);
-                    moveto(75.02753,68.7915);
-                    moveto(74.48853,67.99316);
-                    moveto(73.99335,67.1618);
-                    moveto(73.54352,66.29877);
-                    moveto(73.1405,65.40558);
-                    moveto(72.78564,64.48358);
-                    moveto(55.948,16.4679);
-                    moveto(55.83624,16.21454);
-                    moveto(55.70013,16.00098);
-                    moveto(55.54797,15.82404);
-                    moveto(55.388,15.68054);
-                    moveto(55.22845,15.56738);
-                    moveto(55.0777,15.48145);
-                    moveto(54.94385,15.41962);
-                    moveto(54.83533,15.37866);
-                    moveto(54.61157,15.31909);
-                    moveto(54.41229,15.29474);
-                    moveto(54.23724,15.2984);
-                    moveto(54.08636,15.32294);
-                    moveto(53.85583,15.40588);
-                    moveto(53.71912,15.48608);
-                    moveto(53.44489,15.71411);
-                    moveto(53.25824,15.98816);
-                    moveto(53.1955,16.14722);
-                    moveto(53.15179,16.32355);
-                    moveto(53.12628,16.51904);
-                    moveto(53.11792,16.7356);
-                    moveto(53.11792,59.14166);
-                    moveto(53.08606,60.21869);
-                    moveto(52.99115,61.27808);
-                    moveto(52.83429,62.31781);
-                    moveto(52.61633,63.33594);
-                    moveto(52.33844,64.33063);
-                    moveto(52.00165,65.29987);
-                    moveto(51.60693,66.24182);
-                    moveto(51.15533,67.15454);
-                    moveto(50.64789,68.03607);
-                    moveto(50.08569,68.88458);
-                    moveto(49.46967,69.69806);
-                    moveto(48.80084,70.47461);
-                    moveto(48.08026,71.21234);
-                    moveto(47.30908,71.9093);
-                    moveto(46.48816,72.56354);
-                    moveto(45.61865,73.17322);
-                    moveto(44.8078,73.67316);
-                    moveto(43.97589,74.12268);
-                    moveto(43.12494,74.52167);
-                    moveto(42.2569,74.86969);
-                    moveto(41.37366,75.16656);
-                    moveto(40.47723,75.41217);
-                    moveto(39.56964,75.60614);
-                    moveto(38.65289,75.74823);
-                    moveto(37.72882,75.8382);
-                    moveto(36.7995,75.87579);
-                    moveto(35.86688,75.86078);
-                    moveto(34.93292,75.79297);
-                    moveto(33.99957,75.672);
-                    moveto(33.06879,75.49768);
-                    moveto(32.14252,75.26978);
-                    moveto(31.2229,74.98804);
-                    moveto(30.29712,74.64648);
-                    moveto(29.39923,74.25635);
-                    moveto(28.5307,73.81903);
-                    moveto(27.69299,73.336);
-                    moveto(26.88751,72.80853);
-                    moveto(26.11584,72.23822);
-                    moveto(25.37933,71.6264);
-                    moveto(24.67944,70.97449);
-                    moveto(24.01764,70.28387);
-                    moveto(23.39532,69.55609);
-                    moveto(22.81403,68.79242);
-                    moveto(22.27509,67.99432);
-                    moveto(21.78009,67.16327);
-                    moveto(21.33038,66.3006);
-                    moveto(20.92743,65.40784);
-                    moveto(20.57275,64.48633);
-                    moveto(0,5.896362);
-                    moveto(0,0);
-
-
+              
+              else if (i == 4) { 
+                for (int count = 0; count < 1; count++) {
+                  where();
+                  /*
+                  moveto(0 ,0);
+                   delay(500);
+                   moveto(54 ,0);
+                   moveto(-54 ,0);
+                   delay(500);
+                   moveto(0 ,0);
+                   */
+                }
               }
-
               else if (i == 5) { // box
-                   teleport(0, 0);
                    moveto(0 ,0);
                    moveto(30 ,0);
                    moveto(30 ,30);
