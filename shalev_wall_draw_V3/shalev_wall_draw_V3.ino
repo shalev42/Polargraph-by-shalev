@@ -90,8 +90,8 @@ static long laststep1, laststep2;
 
 // parameters for manual movement:
 
-int lenMax = 1300; // length max of the belt
-int lenMin = -1300;  // length min of the belt
+int lenMax = 13000; // length max of the belt
+int lenMin = -13000;  // length min of the belt
 long lenCountx = 0;
 long lenCounty = 0;
 
@@ -606,9 +606,9 @@ long lenCounty = 0;
           for (int i = 0; i < numButtons; i++) {
             int state = digitalRead(buttonPins[i]);
             if (state == LOW) {
-              if (i == 0) {
+              if (i == 5) {
                 if (lenCounty < lenMax ){
-                  moveMotor(Y_DIR_PIN, Y_STEP_PIN, -stepsPerMotor); // move Y motor counter-clockwise - up y 
+                  moveMotor(Y_DIR_PIN, Y_STEP_PIN, -stepsPerMotor); // move Y motor counter-clockwise - right up 
                   lenCounty = lenCounty + 1;
                   Serial.println(lenCounty);
                   }
@@ -617,9 +617,9 @@ long lenCounty = 0;
                   }
               } 
               
-              else if (i == 1) {
+              else if (i == 4) {
                 if (lenCounty > lenMin){
-                  moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor); // move Y motor clockwise - down y
+                  moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor); // move Y motor clockwise - right down 
                   lenCounty = lenCounty - 1;
                   Serial.println(lenCounty);
                   }
@@ -628,9 +628,9 @@ long lenCounty = 0;
                   }
               } 
 
-              else if (i == 2) {
+              else if (i == 3) {
                 if (lenCountx > lenMin ){
-                  moveMotor(X_DIR_PIN, X_STEP_PIN, -stepsPerMotor); // move X motor counter-clockwise - up x
+                  moveMotor(X_DIR_PIN, X_STEP_PIN, -stepsPerMotor); // move X motor counter-clockwise -left down
                   lenCountx = lenCountx - 1;
                   Serial.println(lenCountx);
                   }
@@ -639,9 +639,9 @@ long lenCounty = 0;
                   }
               } 
               
-              else if (i == 3) {
+              else if (i == 2) {
                 if (lenCountx < lenMax ){
-                  moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor); // move X motor clockwise - up y
+                  moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor); // move X motor clockwise - left up 
                   lenCountx = lenCountx + 1;
                   Serial.println(lenCountx);
                   }
@@ -650,7 +650,7 @@ long lenCounty = 0;
                   }
               }
               
-              else if (i == 4) { 
+              else if (i == 0) {   // you need to connect it to a button in real life!!
                 for (int count = 0; count < 1; count++) {
                   where();
                   /*
@@ -663,7 +663,7 @@ long lenCounty = 0;
                    */
                 }
               }
-              else if (i == 5) { // box
+              else if (i == 1) { // box
                    moveto(0 ,0);
                    moveto(30 ,0);
                    moveto(30 ,30);
