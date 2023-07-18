@@ -117,7 +117,11 @@ long beta = 11.31;
   beta = radian_beta * 180 / PI;
   
 */
-
+//Define iterator value for chaging drawings:
+int b = 0;
+int c = 0;
+unsigned long timerStart = 0;
+const unsigned long timerDuration = 60000; // 1 minute in milliseconds delay between random drawings
 
 /* 
 #define PEN_UP_ANGLE    160 
@@ -141,31 +145,18 @@ struct point {
 //------------------------------------------------------------------------------
 
 struct point actuatorPos;
-
 // plotter position 
 float posx;
-
 float posy;
-
 static float posz;  // pen state
-
 static float feed_rate = 0;
-
 // pen state
-
 static int ps;
-
 #define BAUD            (115200)    
-
 #define MAX_BUF         (64)    
-
 int xstate;
-
 int ystate;
-
-
 //------------------------------------------------------------------------------
-
 void move_step(int stepCount, int stepPin,int dirPin)
 {
   // set the axis direction  
@@ -175,100 +166,61 @@ void move_step(int stepCount, int stepPin,int dirPin)
   else{
     digitalWrite(dirPin, LOW);
     }
-    
     for (int i = 0; i < abs(stepCount); i++) {
-
       // These four lines result in 1 step:
-
       digitalWrite(stepPin, HIGH);
-
       delayMicroseconds(SpeedOFMotors);
-
       digitalWrite(stepPin, LOW);
-
       delayMicroseconds(SpeedOFMotors);
-
     }
         //Serial.print("moved!");
   }
 
-
 //------------------------------------------------------------------------------
 
 // theta = acos((a*a+b*b-c*c)/(2*a*b));
-
 void FK(float l1, float l2,float &x,float &y) {
-
   float a=l1 * TPS;
-
   float b=X_SEPARATION;
-
   float c=l2 * TPS;
-
   float theta = acos((a*a+b*b-c*c)/(2.0*a*b));
-
   x = cos(theta)*l1 + LIMXMIN;
-
   y = sin(theta)*l1 + LIMYMIN;          
-
 /*   float theta = (a*a+b*b-c*c)/(2.0*a*b);
-
   x = theta*l1 + LIMXMIN;
-
   y = sqrt (1.0 - theta * theta ) * l1 + LIMYMIN;*/
-
 }
 
 //------------------------------------------------------------------------------
 void IK(float x,float y,long &l1, long &l2) {
-
   float dy = y - LIMYMIN;
-
   float dx = x - LIMXMIN;
-
   l1 = round(sqrt(dx*dx+dy*dy) / TPS);
-
   dx = x - LIMXMAX;
-
   l2 = round(sqrt(dx*dx+dy*dy) / TPS);
-
 }
 
 //------------------------------------------------------------------------------
 
 // returns angle of dy/dx as a value from 0...2PI
-
 static float atan3(float dy, float dx) {
-
   float a = atan2(dy, dx);
-
   if (a < 0) a = (PI * 2.0) + a;
-
   return a;
-
 }
 
 //------------------------------------------------------------------------------
 // instantly move the virtual plotter position
 // does not validate if the move is valid
 static void teleport(float x, float y) {
-
   posx = x;
-
   posy = y;
-
   xstate = x;
-
   ystate = y;
-
   long l1,l2;
-
   IK(posx, posy, l1, l2);
-
   laststep1 = l1;
-
   laststep2 = l2;
-
 }
 
 //------------------------------------------------------------------------------
@@ -320,158 +272,83 @@ void moveto(float x,float y) {
 }
 
 //------------------------------------------------------------------------------
-
 static void line_safe(float x,float y) {
-
   // split up long lines to make them straighter?
-
   float dx=x-posx;
-
   float dy=y-posy;
-
   float len=sqrt(dx*dx+dy*dy);
-
   if(len<=TPS) {
-
     moveto(x,y);
-
     return;
-
   }
-
   long pieces=floor(len/TPS);
-
   float x0=posx;
-
   float y0=posy;
-
   float a;
-
   for(long j=0;j<=pieces;++j) {
-
     a=(float)j/(float)pieces;
-
     moveto((x-x0)*a+x0,(y-y0)*a+y0);
-
   }
-
   moveto(x,y);
-
 }
 //------------------------------------------------------------------------------
-
 void line(float x,float y) 
-
 {
-
   line_safe(x,y);
-
 }
-
 //------------------------------------------------------------------------------
 
 void moveDown(int steps, int delayTime) 
-
 {
-
   digitalWrite(X_DIR_PIN, LOW); // Set direction to move down
-
   digitalWrite(Y_DIR_PIN, HIGH); // Set direction to move down
-
   for (int i = 0; i < steps; i++) {
-
     digitalWrite(X_STEP_PIN, HIGH); // Trigger a step
-
     delayMicroseconds(delayTime); // Wait for the specified delay
-
     digitalWrite(Y_STEP_PIN, HIGH); // Trigger a step
-
     delayMicroseconds(delayTime); // Wait for the specified delay
-
-    
-
     digitalWrite(X_STEP_PIN, LOW); // Complete the step
-
     delayMicroseconds(delayTime); // Wait for the specified delay
-
     digitalWrite(Y_STEP_PIN, LOW); // Complete the step
-
     delayMicroseconds(delayTime); // Wait for the specified delay
-
   }
-
 }
 //------------------------------------------------------------------------------
 void homing() {
-
   // Move the left motor clockwise until the left microswitch is pressed or timeout occurs
-
   unsigned long timeout = millis() + 6000; // Set a timeout of 5 seconds
-
   while (digitalRead(LS_LEFT_PIN) == LOW && millis() < timeout) {
-
     setDirectionLeft(COUNTER_CLOCKWISE);
-
     stepMotorLeft();
-
   }
-
-
-
   // Move the right motor counter-clockwise until the right microswitch is pressed or timeout occurs
-
   timeout = millis() + 6000; // Reset the timeout
-
   while (digitalRead(LS_RIGHT_PIN) == LOW && millis() < timeout) {
-
     setDirectionRight(CLOCKWISE);
-
     stepMotorRight();
-
   }
-
-
-
   // Set the motor positions to the home position
-
   setDirectionLeft(CLOCKWISE);
-
   setDirectionRight(COUNTER_CLOCKWISE);
-
   // Move the motors slightly to ensure they are at the home position
-
   timeout = millis() + 1000; // Set a timeout of 1 second
-
   while ((digitalRead(LS_LEFT_PIN) == HIGH || digitalRead(LS_RIGHT_PIN) == HIGH) && millis() < timeout) {
-
     stepMotorLeft();
-
     stepMotorRight();
-
   }
-
   teleport(0, -200);
-
 }
-
 //------------------------------------------------------------------------------
-
 void setDirectionRight(int direction) {
-
   digitalWrite(X_DIR_PIN, direction);
-
 }
 
 //------------------------------------------------------------------------------
-
 void setDirectionLeft(int direction) {
-
   digitalWrite(Y_DIR_PIN, direction);
-
 }
 
 //------------------------------------------------------------------------------
-
 void where() {
   Serial.print("X,Y = ");
   Serial.print(posx);
@@ -488,54 +365,33 @@ void where() {
 //------------------------------------------------------------------------------
 
 void stepMotorRight() {
-
   digitalWrite(X_STEP_PIN, HIGH);
-
   delayMicroseconds(SpeedOFMotors); // Adjust this value to change motor speed
-
   digitalWrite(X_STEP_PIN, LOW);
-
   delayMicroseconds(SpeedOFMotors); // Adjust this value to change motor speed
-
 }
 
 //------------------------------------------------------------------------------
 
 void stepMotorLeft() {
-
   digitalWrite(Y_STEP_PIN, HIGH);
-
   delayMicroseconds(SpeedOFMotors); // Adjust this value to change motor speed
-
   digitalWrite(Y_STEP_PIN, LOW);
-
   delayMicroseconds(SpeedOFMotors); // Adjust this value to change motor speed
-
 }
 
-
 //------------------------------------------------------------------------------
-
 // Generate random (x,y) coordinates within the given range and send them to the printer
-
 void sendRandomCoordinates(int xMin, int xMax, int yMin, int yMax) {
-
   int x = random(xMin, xMax);
-
   int y = random(yMin, yMax);
-
- 
   // Check if the generated x and y values are within range
-
   if (x >= xMin && x <= xMax && y >= yMin && y <= yMax) {
-
     moveto(x, y);
-
   }
-
 }
-//------------------------------------------------------------------------------
 
+//------------------------------------------------------------------------------
 void moveMotor(int dirPin, int stepPin, int steps, bool clockwise) {
   digitalWrite(dirPin, clockwise ? HIGH : LOW); // set motor direction
   for(int i = 0; i < steps; i++) {
@@ -546,6 +402,61 @@ void moveMotor(int dirPin, int stepPin, int steps, bool clockwise) {
   }
 }
 //------------------------------------------------------------------------------
+void executeCode() {
+  // Code to be executed after one minute
+  if (c == 0) {
+    moveto(0 ,0);
+    moveto(30 ,0);
+    moveto(30 ,30);
+    moveto(-30 ,30);
+    moveto(-30 ,-30);
+    moveto(30 ,-30);
+    moveto(30 ,0);
+    moveto(0 ,0);
+    c = 1;  
+  }
+  else if (c == 1) {
+    moveto(0 ,0);
+    moveto(20, 0);
+    moveto(40, 14.64);
+    moveto(40, 34.64);
+    moveto(20, 49.29);
+    moveto(0, 34.64);
+    moveto(0, 14.64);
+    moveto(20, 0);
+    moveto(0 ,0);
+    c = 2;
+   }
+
+  else if (c == 2) {
+    moveto(0, 0);       // Start point from (0, 0)
+    moveto(4.14, 7.36);
+    moveto(9.39, 14.14);
+    moveto(15.36, 19.39);
+    moveto(21.64, 22.64);
+    moveto(27.86, 23.85);
+    moveto(33.57, 22.83);
+    moveto(38.38, 19.57);
+    moveto(41.96, 14.35);
+    moveto(44.12, 7.58);
+    moveto(44.68, 0.77);
+    moveto(43.60, -5.10);
+    moveto(41.00, -10.31);
+    moveto(36.99, -15.00);
+    moveto(31.81, -18.67);
+    moveto(25.76, -20.95);
+    moveto(19.27, -21.58);
+    moveto(12.84, -20.47);
+    moveto(7.00, -17.74);
+    moveto(2.28, -13.60);
+    moveto(0, 0);       // Return to the start point
+    c = 0;
+   }
+
+  
+}               
+
+
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 void setup() {
@@ -558,7 +469,7 @@ void setup() {
   pinMode(LS_LEFT_PIN, INPUT_PULLUP);
   pinMode(LS_RIGHT_PIN, INPUT_PULLUP);
   Serial.println("Booting complete, start homing...");
-
+  
   // Start homing
   //moveDown(1400, 700);
   //homing();
@@ -572,28 +483,28 @@ void setup() {
     pinMode(buttonPins[i], INPUT_PULLUP);
   }
 
-
   //moveto(0 ,0);
-
   //Serial.println("Test OK!");
-
   //demo1();
-
   // line_safe(0 , 0);
-
   // moveto(0 , 0);
-
-  
-
 }
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-void loop()
-
-{
+void loop(){
+  
+     //checks for inactivity = button pressing if not - start a timer of 1 minute 
+    if (millis() - timerStart >= timerDuration) {
+    // Timer duration reached, execute the code
+    executeCode();
+    // Reset the timer
+    timerStart = millis();
+  }
+  
+  
     //sendRandomCoordinates(0,30,-30,30);
 /*
 int lenMax = 2500; // length max of the belt
@@ -607,6 +518,7 @@ long lenCounty = 0;
             int state = digitalRead(buttonPins[i]);
             if (state == LOW) {
               if (i == 5) {
+                timerStart = millis();
                 if (lenCounty < lenMax ){
                   moveMotor(Y_DIR_PIN, Y_STEP_PIN, -stepsPerMotor); // move Y motor counter-clockwise - right up 
                   lenCounty = lenCounty + 1;
@@ -618,6 +530,7 @@ long lenCounty = 0;
               } 
               
               else if (i == 4) {
+                timerStart = millis();
                 if (lenCounty > lenMin){
                   moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor); // move Y motor clockwise - right down 
                   lenCounty = lenCounty - 1;
@@ -629,6 +542,7 @@ long lenCounty = 0;
               } 
 
               else if (i == 3) {
+                timerStart = millis();
                 if (lenCountx > lenMin ){
                   moveMotor(X_DIR_PIN, X_STEP_PIN, -stepsPerMotor); // move X motor counter-clockwise -left down
                   lenCountx = lenCountx - 1;
@@ -640,6 +554,7 @@ long lenCounty = 0;
               } 
               
               else if (i == 2) {
+                timerStart = millis();
                 if (lenCountx < lenMax ){
                   moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor); // move X motor clockwise - left up 
                   lenCountx = lenCountx + 1;
@@ -650,11 +565,12 @@ long lenCounty = 0;
                   }
               }
               
-              else if (i == 0) {   // you need to connect it to a button in real life!!
+              else if (i == 0) {  // you need to connect it to a button in real life!!
+                timerStart = millis();  
                 for (int count = 0; count < 1; count++) {
                   where();
                   /*
-                  moveto(0 ,0);
+                   moveto(0 ,0);
                    delay(500);
                    moveto(54 ,0);
                    moveto(-54 ,0);
@@ -663,19 +579,47 @@ long lenCounty = 0;
                    */
                 }
               }
-              else if (i == 1) { // box
-                   moveto(0 ,0);
-                   moveto(30 ,0);
-                   moveto(30 ,30);
-                   moveto(-30 ,30);
-                   moveto(-30 ,-30);
-                   moveto(30 ,-30);
-                   moveto(30 ,0);
-                   moveto(0 ,0);
-               }
+              else if (i == 1) {
+                timerStart = millis();// box
+                  if (b == 0) {
+                       moveto(0 ,0);
+                       moveto(30 ,0);
+                       moveto(30 ,30);
+                       moveto(-30 ,30);
+                       moveto(-30 ,-30);
+                       moveto(30 ,-30);
+                       moveto(30 ,0);
+                       moveto(0 ,0);
+                       b = 1;                   }
+                    else if (b == 1) {
+                      moveto(0 ,0);
+                      moveto(20 ,0);
+                      moveto(20 ,20);
+                      moveto(-20 ,20);
+                      moveto(-20 ,-20);
+                      moveto(20 ,-20);
+                      moveto(20 ,0);
+                      moveto(0 ,0);
+                      b = 2;  
+                    }
+                    else if (b == 2) {
+                      moveto(0 ,0);
+                      moveto(10 ,0);
+                      moveto(10 ,10);
+                      moveto(-10 ,10);
+                      moveto(-10 ,-10);
+                      moveto(10 ,-10);
+                      moveto(10 ,0);
+                      moveto(0 ,0);
+                      b = 0;  
+                    }
+                    else {
+                      Serial.println("Invalid value of i");
+                   }
+                }
+              }
             }
           }
-        }
         
         void moveMotor(int dirPin, int stepPin, int steps) {
           digitalWrite(dirPin, steps > 0 ? HIGH : LOW); // set motor direction based on sign of steps
