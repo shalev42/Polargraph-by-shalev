@@ -23,8 +23,6 @@
 const int SpeedOFMotors = 800; // set speed each motor movement
 const int stepsPerMotor = 1; // set the number of steps for each motor movement
 //------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-
 
 #define X_SEPARATION  1300    //The horizontal distance above the two ropes mm       
 
@@ -54,7 +52,7 @@ int yDirection = 1;
 const int buttonPins[] = {12, 9, A2, A3, 10, 11}; // define button pins
 
 const int numButtons = sizeof(buttonPins) / sizeof(buttonPins[0]); // get the number of buttons
-
+//------------------------------------------------------------------------------
 
 // Define constants for motor direction
 
@@ -65,6 +63,8 @@ const int numButtons = sizeof(buttonPins) / sizeof(buttonPins[0]); // get the nu
 unsigned long previousMillis = 0;
 
 const long interval = 2000;
+//------------------------------------------------------------------------------
+
 
 #define STEPS_PER_TURN  (2048)  
 
@@ -87,15 +87,13 @@ const long interval = 2000;
 #define M2_REEL_IN      1     
 
 static long laststep1, laststep2; 
-
+//------------------------------------------------------------------------------
 // parameters for manual movement:
-
 int lenMax = 13000; // length max of the belt
 int lenMin = -13000;  // length min of the belt
 long lenCountx = 0;
 long lenCounty = 0;
-
-
+//------------------------------------------------------------------------------
 // parameters for manual coordinates:
 long disx = 0;
 long disy = 0;
@@ -121,7 +119,7 @@ long beta = 11.31;
 int b = 0;
 int c = 0;
 unsigned long timerStart = 0;
-const unsigned long timerDuration = 60000; // 1 minute in milliseconds delay between random drawings
+const unsigned long timerDuration = 0.5 *(60000); // 1 minute in milliseconds delay between random drawings
 
 /* 
 #define PEN_UP_ANGLE    160 
@@ -132,6 +130,7 @@ const unsigned long timerDuration = 60000; // 1 minute in milliseconds delay bet
 
 #define PEN_UP 0    
 */
+//------------------------------------------------------------------------------
 
 struct point { 
 
@@ -453,7 +452,7 @@ void executeCode() {
     c = 0;
    }
 
-  
+   
 }               
 
 
