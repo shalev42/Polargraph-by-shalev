@@ -7,6 +7,8 @@
 
 #include <time.h>
 
+#include <Servo.h>
+
 #define X_DIR_PIN 2
 
 #define X_STEP_PIN 5
@@ -121,15 +123,11 @@ int c = 0;
 unsigned long timerStart = 0;
 const unsigned long timerDuration = 0.5 *(60000); // 1 minute in milliseconds delay between random drawings
 
-/* 
-#define PEN_UP_ANGLE    160 
+// servo stuff:
+Servo myservo;  // create servo object to control a servo
+int pos = 0;    // variable to store the servo position
+int countServo = 0;
 
-#define PEN_DOWN_ANGLE  100  
-
-#define PEN_DOWN 1  
-
-#define PEN_UP 0    
-*/
 //------------------------------------------------------------------------------
 
 struct point { 
@@ -468,6 +466,8 @@ void setup() {
   pinMode(LS_LEFT_PIN, INPUT_PULLUP);
   pinMode(LS_RIGHT_PIN, INPUT_PULLUP);
   Serial.println("Booting complete, start homing...");
+  myservo.attach(A5);  // attaches the servo on pin A5 to the servo object
+
   
   // Start homing
   //moveDown(1400, 700);
@@ -565,19 +565,22 @@ long lenCounty = 0;
               }
               
               else if (i == 0) {  // you need to connect it to a button in real life!!
-                timerStart = millis();  
-                for (int count = 0; count < 1; count++) {
-                  where();
-                  /*
-                   moveto(0 ,0);
-                   delay(500);
-                   moveto(54 ,0);
-                   moveto(-54 ,0);
-                   delay(500);
-                   moveto(0 ,0);
-                   */
+                timerStart = millis();
+                if (countServo == 0) {
+                  myservo.write(0);              // tell servo to go to position in variable 'pos'
+                  delay(15);
+                  countServo = 1; 
                 }
-              }
+                else if (countServo == 1) {
+                  myservo.write(160);              // tell servo to go to position in variable 'pos'
+                  delay(15);
+                  countServo = 0; 
+                  
+                }
+
+                
+                }
+              
               else if (i == 1) {
                 timerStart = millis();// box
                   if (b == 0) {
