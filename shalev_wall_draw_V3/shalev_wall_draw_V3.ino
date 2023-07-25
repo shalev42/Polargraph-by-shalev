@@ -121,11 +121,10 @@ long beta = 11.31;
 int b = 0;
 int c = 0;
 unsigned long timerStart = 0;
-const unsigned long timerDuration = 0.5 *(60000); // 1 minute in milliseconds delay between random drawings
+const unsigned long timerDuration = 10 *(60000); // 1 minute in milliseconds delay between random drawings
 
 // servo stuff:
 Servo myservo;  // create servo object to control a servo
-int pos = 0;    // variable to store the servo position
 int countServo = 0;
 
 //------------------------------------------------------------------------------
@@ -572,7 +571,7 @@ long lenCounty = 0;
                   countServo = 1; 
                 }
                 else if (countServo == 1) {
-                  myservo.write(160);              // tell servo to go to position in variable 'pos'
+                  myservo.write(-50);              // tell servo to go to position in variable 'pos'
                   delay(15);
                   countServo = 0; 
                   
