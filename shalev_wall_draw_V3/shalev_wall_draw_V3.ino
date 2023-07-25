@@ -566,12 +566,12 @@ long lenCounty = 0;
               else if (i == 0) {  // you need to connect it to a button in real life!!
                 timerStart = millis();
                 if (countServo == 0) {
-                  myservo.write(0);              // tell servo to go to position in variable 'pos'
+                  myservo.write(-20);              // tell servo to go to position in variable 'pos'
                   delay(15);
                   countServo = 1; 
                 }
                 else if (countServo == 1) {
-                  myservo.write(-50);              // tell servo to go to position in variable 'pos'
+                  myservo.write(20);              // tell servo to go to position in variable 'pos'
                   delay(15);
                   countServo = 0; 
                   
