@@ -1,13 +1,12 @@
 // polargraph code edited by shalev: 
 
-
+//libraries for us to use in this code: (compatable on pi)
 #include <stdlib.h>
-
 #include <stdio.h>
-
 #include <time.h>
-
 #include <Servo.h>
+
+// pins for motors:
 
 #define X_DIR_PIN 2
 
@@ -19,9 +18,9 @@
 
 #define STEPS_PER_REVOLUTION 200
 
-
-// main motors regular movement:
 //------------------------------------------------------------------------------
+// settings for the movment of the motors:
+
 const int SpeedOFMotors = 800; // set speed each motor movement
 const int stepsPerMotor = 1; // set the number of steps for each motor movement
 //------------------------------------------------------------------------------
@@ -42,6 +41,7 @@ const int stepsPerMotor = 1; // set the number of steps for each motor movement
 
 // milliseconds, will quickly become a bigger number than can be stored in an int.
 //------------------------------------------------------------------------------
+// homing and buttons defenition:
 
 #define LS_LEFT_PIN  (A1) // switch for homing left motor
 
@@ -56,7 +56,7 @@ const int buttonPins[] = {12, 9, A2, A3, 10, 11}; // define button pins
 const int numButtons = sizeof(buttonPins) / sizeof(buttonPins[0]); // get the number of buttons
 //------------------------------------------------------------------------------
 
-// Define constants for motor direction
+// Define constants for motor direction:
 
 #define CLOCKWISE 0
 
@@ -66,6 +66,8 @@ unsigned long previousMillis = 0;
 
 const long interval = 2000;
 //------------------------------------------------------------------------------
+
+// old code stuff for the neew code to work:
 
 
 #define STEPS_PER_TURN  (2048)  
@@ -91,6 +93,7 @@ const long interval = 2000;
 static long laststep1, laststep2; 
 //------------------------------------------------------------------------------
 // parameters for manual movement:
+
 int lenMax = 13000; // length max of the belt
 int lenMin = -13000;  // length min of the belt
 long lenCountx = 0;
@@ -117,15 +120,24 @@ long beta = 11.31;
   beta = radian_beta * 180 / PI;
   
 */
+//------------------------------------------------------------------------------
+
 //Define iterator value for chaging drawings:
 int b = 0;
 int c = 0;
 unsigned long timerStart = 0;
-const unsigned long timerDuration = 10 *(60000); // 1 minute in milliseconds delay between random drawings
+const unsigned long timerDuration = 1000 *(60000); // 1 minute in milliseconds delay between random drawings
+//------------------------------------------------------------------------------
 
 // servo stuff:
 Servo myservo;  // create servo object to control a servo
 int countServo = 0;
+// debounce for the button:
+int buttonState = HIGH;  // Current state of the button (HIGH means not pressed)
+int lastButtonState = HIGH;  // Previous state of the button (HIGH means not pressed)
+unsigned long lastDebounceTime = 0;  // Last time the button state was toggled
+unsigned long debounceDelay = 50;    // Debounce time in milliseconds
+int test = 0;  // Variable to keep track of the current direction of the servo
 
 //------------------------------------------------------------------------------
 
@@ -455,6 +467,8 @@ void executeCode() {
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
 void setup() {
   Serial.begin(BAUD);
   Serial.println("Booting...");
@@ -501,16 +515,20 @@ void loop(){
     // Reset the timer
     timerStart = millis();
   }
-  
-  
-    //sendRandomCoordinates(0,30,-30,30);
-/*
-int lenMax = 2500; // length max of the belt
-int lenMin = -2500;  // length min of the belt
-long lenCountx = 0;
-long lenCounty = 0;
 
- */
+    //sendRandomCoordinates(0,30,-30,30);
+    /*
+    int lenMax = 2500; // length max of the belt
+    int lenMin = -2500;  // length min of the belt
+    long lenCountx = 0;
+    long lenCounty = 0;
+    
+     */
+
+      
+
+      
+    
       // read button states and move motors accordingly
           for (int i = 0; i < numButtons; i++) {
             int state = digitalRead(buttonPins[i]);
@@ -563,22 +581,26 @@ long lenCounty = 0;
                   }
               }
               
-              else if (i == 0) {  // you need to connect it to a button in real life!!
-                timerStart = millis();
-                if (countServo == 0) {
-                  myservo.write(-20);              // tell servo to go to position in variable 'pos'
-                  delay(15);
-                  countServo = 1; 
-                }
-                else if (countServo == 1) {
-                  myservo.write(20);              // tell servo to go to position in variable 'pos'
-                  delay(15);
-                  countServo = 0; 
-                  
-                }
+              else if (i == 0) { 
 
-                
-                }
+             
+                  // If the button is pressed (LOW), change the direction of the servo and set 'test' variable accordingly
+                  if (buttonState == HIGH) {
+                    static int test = 0;  // Variable to keep track of the current direction of the servo
+                    if (test == 0) {
+                      myservo.write(40);
+                        delay(500);
+                      test = 1;
+                    } else {
+                      myservo.write(120);
+                        delay(500);
+                      test = 0;
+                    }
+                    delay(50); // Optional delay to avoid rapid servo movements due to button's mechanical noise
+                  }
+
+      
+            }
               
               else if (i == 1) {
                 timerStart = millis();// box
