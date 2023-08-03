@@ -18,7 +18,7 @@
 // settings for the movment of the motors:
 
 const int SpeedOFMotors = 800; // set speed each motor movement
-const int stepsPerMotor = 1; // set the number of steps for each motor movement
+const int stepsPerMotor = 25; // set the number of steps for each motor movement
 //------------------------------------------------------------------------------
 
 #define X_SEPARATION  1300    //The horizontal distance above the two ropes mm       
@@ -88,19 +88,15 @@ const long interval = 2000;
 
 static long laststep1, laststep2; 
 //------------------------------------------------------------------------------
-// parameters for manual movement:
 
-int lenMax = 13000; // length max of the belt
-int lenMin = -13000;  // length min of the belt
-long lenCountx = 0;
-long lenCounty = 0;
 //------------------------------------------------------------------------------
 //code for encoders:
 const int ENCODER_A_BIT_0 = 11;
 const int ENCODER_A_BIT_1 = 10;
 const int ENCODER_B_BIT_0 = A2;
 const int ENCODER_B_BIT_1 = A3;
-
+int16_t old_encoder_A_count = 0;
+int16_t old_encoder_B_count = 0;
 int16_t encoder_A_count = 0;
 int16_t encoder_B_count = 0;
 int rangLimit = 100;
@@ -558,6 +554,15 @@ void setup() {
 }
 
 //------------------------------------------------------------------------------
+void moveMotor(int dirPin, int stepPin, int steps) {
+          digitalWrite(dirPin, steps > 0 ? HIGH : LOW); // set motor direction based on sign of steps
+          for (int i = 0; i < abs(steps); i++) {
+            digitalWrite(stepPin, HIGH);
+            delayMicroseconds(SpeedOFMotors);
+            digitalWrite(stepPin, LOW);
+            delayMicroseconds(SpeedOFMotors);
+  }
+}
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
@@ -573,10 +578,40 @@ void loop(){
 
   readEncoders();
 
-  int motor_steps_A = map(encoder_A_count, -100, 100, -stepsPerMotor, stepsPerMotor) / 2;
-  int motor_steps_B = map(encoder_B_count, -100, 100, -stepsPerMotor, stepsPerMotor) / 2;
+  int count_A = encoder_A_count / 2;
+  int count_B = encoder_B_count / 2;
 
-    // Move Y motor based on encoder_A_count
+  // Check if the encoder count increased by one step
+  if (encoder_A_count > old_encoder_A_count) {
+    // Move Y motor counter-clockwise - right up by one step
+    moveMotor(Y_DIR_PIN, Y_STEP_PIN, -stepsPerMotor);
+  } else if (encoder_A_count < old_encoder_A_count) {
+    // Move Y motor clockwise - right down by one step
+    moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor);
+  }
+
+  // Update the old encoder value for the next iteration
+  old_encoder_A_count = encoder_A_count;
+
+  // Check if the encoder count increased by one step
+  if (encoder_B_count > old_encoder_B_count) {
+    // Move X motor counter-clockwise - right up by one step
+    moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor);
+  } else if (encoder_B_count < old_encoder_B_count) {
+    // Move X motor clockwise - right down by one step
+    moveMotor(X_DIR_PIN, X_STEP_PIN, -stepsPerMotor);
+  }
+
+  // Update the old encoder value for the next iteration
+  old_encoder_B_count = encoder_B_count;
+
+    Serial.print("Encoder A Count: ");
+    Serial.print(encoder_A_count/2);
+    Serial.print(", Encoder B Count: ");
+    Serial.println(encoder_B_count/2);
+  
+/*
+      // Move Y motor based on encoder_A_count
     if (encoder_A_count > 0) {
       moveMotor(Y_DIR_PIN, Y_STEP_PIN, -motor_steps_A); // Move Y motor counter-clockwise - right up
     } else if (encoder_A_count < 0) {
@@ -596,7 +631,7 @@ void loop(){
     Serial.print(encoder_A_count/2);
     Serial.print(", Encoder B Count: ");
     Serial.println(encoder_B_count/2);
-    /*
+    
       // read button states and move motors accordingly
           for (int i = 0; i < numButtons; i++) {
             int state = digitalRead(buttonPins[i]);
@@ -673,15 +708,7 @@ void loop(){
 
 
         
-        void moveMotor(int dirPin, int stepPin, int steps) {
-          digitalWrite(dirPin, steps > 0 ? HIGH : LOW); // set motor direction based on sign of steps
-          for (int i = 0; i < abs(steps); i++) {
-            digitalWrite(stepPin, HIGH);
-            delayMicroseconds(SpeedOFMotors);
-            digitalWrite(stepPin, LOW);
-            delayMicroseconds(SpeedOFMotors);
-  }
-}
+
 
 
 
