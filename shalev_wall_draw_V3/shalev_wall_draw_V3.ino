@@ -17,8 +17,8 @@
 //------------------------------------------------------------------------------
 // settings for the movment of the motors:
 
-const int SpeedOFMotors = 800; // set speed each motor movement
-const int stepsPerMotor = 25; // set the number of steps for each motor movement
+const int SpeedOFMotors = 1000; // set speed each motor movement
+const int stepsPerMotor = 10; // set the number of steps for each motor movement
 //------------------------------------------------------------------------------
 
 #define X_SEPARATION  1300    //The horizontal distance above the two ropes mm       
@@ -47,9 +47,13 @@ int xDirection = 1;
 
 int yDirection = 1;
 
-const int buttonPins[] = {12, 13}; // define button pins
+//Pin numbers for the buttons
+const int buttonPin12 = 12;
+const int buttonPin9 = 9;
 
-const int numButtons = sizeof(buttonPins) / sizeof(buttonPins[0]); // get the number of buttons
+// Variables to store the button states
+int buttonState12 = 0;
+int buttonState9 = 0;
 //------------------------------------------------------------------------------
 
 // Define constants for motor direction:
@@ -95,48 +99,63 @@ const int ENCODER_A_BIT_0 = 11;
 const int ENCODER_A_BIT_1 = 10;
 const int ENCODER_B_BIT_0 = A2;
 const int ENCODER_B_BIT_1 = A3;
-int16_t old_encoder_A_count = 0;
-int16_t old_encoder_B_count = 0;
-int16_t encoder_A_count = 0;
-int16_t encoder_B_count = 0;
-int rangLimit = 100;
 
-int readEncoder(int bit0, int bit1) {
-  return (digitalRead(bit0) << 1) | digitalRead(bit1);
+
+byte Old_Encoder_A_Read = 0; // old 2 bits read from first encoder 
+byte New_Encoder_A_Read = 0; // new 2 bits read from first encoder 
+int16_t Current_Encoder_A_Count = 0;// serial_printed and/or display 
+int16_t Old_Encoder_A_Count = 0;// for later use
+
+byte Old_Encoder_B_Read = 0; // old 2 bits read from second encoder 
+byte New_Encoder_B_Read = 0; // new 2 bits read from second encoder 
+int16_t Current_Encoder_B_Count = 0;// serial_printed and/or display 
+int16_t Old_Encoder_B_Count = 0;// for later use
+
+
+uint32_t Current_Time = 0   ;
+
+int Read_Encoder_A(){
+     Old_Encoder_A_Read = New_Encoder_A_Read ;
+     New_Encoder_A_Read = (((digitalRead(ENCODER_A_BIT_1)) << 1) + (digitalRead(ENCODER_A_BIT_0))) ;
+     byte Check_Direction  = (Old_Encoder_A_Read << 2) + New_Encoder_A_Read  ; // x4 = 2 rotate left 
+     switch (Check_Direction)
+     {
+      case 1: case 7: case 8: case 14:
+      return 1 ;
+      case 2: case 4: case 11: case 13:
+      return -1 ;
+      case 0: case 5: case 10: case 15:
+      return 0 ;
+      default: // need to avoide delay in return 
+      return 0 ; // 
+    }
 }
-
-void readEncoders() {
-  static int old_encoder_A_state = readEncoder(ENCODER_A_BIT_0, ENCODER_A_BIT_1);
-  static int old_encoder_B_state = readEncoder(ENCODER_B_BIT_0, ENCODER_B_BIT_1);
-
-  int new_encoder_A_state = readEncoder(ENCODER_A_BIT_0, ENCODER_A_BIT_1);
-  int new_encoder_B_state = readEncoder(ENCODER_B_BIT_0, ENCODER_B_BIT_1);
-
-  if (new_encoder_A_state != old_encoder_A_state) {
-    if ((old_encoder_A_state == 0b01 && new_encoder_A_state == 0b00) || (old_encoder_A_state == 0b10 && new_encoder_A_state == 0b11)) {
-      if (encoder_A_count < rangLimit) {
-        encoder_A_count++;
-      }
-    } else if ((old_encoder_A_state == 0b00 && new_encoder_A_state == 0b01) || (old_encoder_A_state == 0b11 && new_encoder_A_state == 0b10)) {
-      if (encoder_A_count > -rangLimit) {
-        encoder_A_count--;
-      }
+//--------------------------
+int Read_Encoder_B(){
+     Old_Encoder_B_Read = New_Encoder_B_Read ;
+     New_Encoder_B_Read = (((digitalRead(ENCODER_B_BIT_1)) << 1) + (digitalRead(ENCODER_B_BIT_0))) ;
+     byte Check_Direction  = (Old_Encoder_B_Read << 2) + New_Encoder_B_Read  ; // x4 = 2 rotate left 
+     switch (Check_Direction)
+     {
+      case 1: case 7: case 8: case 14:
+      return 1 ;
+      case 2: case 4: case 11: case 13:
+      return -1 ;
+      case 0: case 5: case 10: case 15:
+      return 0 ;
+      default: // need to avoide delay in return 
+      return 0 ; // 
     }
-    old_encoder_A_state = new_encoder_A_state;
-  }
-
-  if (new_encoder_B_state != old_encoder_B_state) {
-    if ((old_encoder_B_state == 0b01 && new_encoder_B_state == 0b00) || (old_encoder_B_state == 0b10 && new_encoder_B_state == 0b11)) {
-      if (encoder_B_count < rangLimit) {
-        encoder_B_count++;
-      }
-    } else if ((old_encoder_B_state == 0b00 && new_encoder_B_state == 0b01) || (old_encoder_B_state == 0b11 && new_encoder_B_state == 0b10)) {
-      if (encoder_B_count > -rangLimit) {
-        encoder_B_count--;
-      }
-    }
-    old_encoder_B_state = new_encoder_B_state;
-  }
+}
+//---------------------------------
+void Update_Encoder_A_Count(){
+  int temp_move = Read_Encoder_A();
+  Current_Encoder_A_Count += temp_move;
+}
+//---------------------------------
+void Update_Encoder_B_Count(){
+  int temp_move = Read_Encoder_B();
+  Current_Encoder_B_Count += temp_move;
 }
 
 
@@ -507,7 +526,16 @@ void executeCode() {
    
 }               
 
-
+//------------------------------------------------------------------------------
+void moveMotor(int dirPin, int stepPin, int steps) {
+          digitalWrite(dirPin, steps > 0 ? HIGH : LOW); // set motor direction based on sign of steps
+          for (int i = 0; i < abs(steps); i++) {
+            digitalWrite(stepPin, HIGH);
+            delayMicroseconds(SpeedOFMotors);
+            digitalWrite(stepPin, LOW);
+            delayMicroseconds(SpeedOFMotors);
+  }
+}
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -528,7 +556,15 @@ void setup() {
   pinMode(ENCODER_A_BIT_1, INPUT_PULLUP);
   pinMode(ENCODER_B_BIT_0, INPUT_PULLUP);
   pinMode(ENCODER_B_BIT_1, INPUT_PULLUP); 
-   
+  attachInterrupt(digitalPinToInterrupt(ENCODER_A_BIT_0), Update_Encoder_A_Count, CHANGE);// arduino nano can only D2 and D3 interupt
+  attachInterrupt(digitalPinToInterrupt(ENCODER_A_BIT_1), Update_Encoder_A_Count, CHANGE);// arduino nano can only D2 and D3 interupt
+
+  // buttons:
+  pinMode(buttonPin12, INPUT_PULLUP);
+  pinMode(buttonPin9, INPUT_PULLUP);
+  
+  
+  Current_Time = millis();
   Serial.println("Booting complete, start homing...");
   myservo.attach(A5);  // attaches the servo on pin A5 to the servo object
 
@@ -542,9 +578,7 @@ void setup() {
   //line_safe(0 ,100);
   Serial.println("homing done");
   
-  for (int i = 0; i < numButtons; i++) {
-    pinMode(buttonPins[i], INPUT_PULLUP);
-  }
+
 
   //moveto(0 ,0);
   //Serial.println("Test OK!");
@@ -553,18 +587,11 @@ void setup() {
   // moveto(0 , 0);
 }
 
-//------------------------------------------------------------------------------
-void moveMotor(int dirPin, int stepPin, int steps) {
-          digitalWrite(dirPin, steps > 0 ? HIGH : LOW); // set motor direction based on sign of steps
-          for (int i = 0; i < abs(steps); i++) {
-            digitalWrite(stepPin, HIGH);
-            delayMicroseconds(SpeedOFMotors);
-            digitalWrite(stepPin, LOW);
-            delayMicroseconds(SpeedOFMotors);
-  }
-}
+
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+int Last_Encoder_A_Count = Current_Encoder_A_Count;
+int Last_Encoder_B_Count = Current_Encoder_B_Count;
 
 void loop(){
       
@@ -575,85 +602,65 @@ void loop(){
     // Reset the timer
     timerStart = millis();
   }
+  Update_Encoder_A_Count();// encoder A is updated by interupt 
+  Update_Encoder_B_Count();// encoder A is updated by interupt 
+  
 
-  readEncoders();
-
-  int count_A = encoder_A_count / 2;
-  int count_B = encoder_B_count / 2;
-
+  
   // Check if the encoder count increased by one step
-  if (encoder_A_count > old_encoder_A_count) {
+  if (Current_Encoder_A_Count > Last_Encoder_A_Count) {
     // Move Y motor counter-clockwise - right up by one step
     moveMotor(Y_DIR_PIN, Y_STEP_PIN, -stepsPerMotor);
-  } else if (encoder_A_count < old_encoder_A_count) {
+  } else if (Current_Encoder_A_Count < Last_Encoder_A_Count ) {
     // Move Y motor clockwise - right down by one step
     moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor);
   }
-
-  // Update the old encoder value for the next iteration
-  old_encoder_A_count = encoder_A_count;
-
+   Last_Encoder_A_Count = Current_Encoder_A_Count;
+   
   // Check if the encoder count increased by one step
-  if (encoder_B_count > old_encoder_B_count) {
+  if (Current_Encoder_B_Count > Last_Encoder_B_Count) {
     // Move X motor counter-clockwise - right up by one step
     moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor);
-  } else if (encoder_B_count < old_encoder_B_count) {
+  } else if (Current_Encoder_B_Count < Last_Encoder_B_Count) {
     // Move X motor clockwise - right down by one step
     moveMotor(X_DIR_PIN, X_STEP_PIN, -stepsPerMotor);
   }
+  Last_Encoder_B_Count = Current_Encoder_B_Count;
 
-  // Update the old encoder value for the next iteration
-  old_encoder_B_count = encoder_B_count;
 
+  /*
+   // Print encoder values
     Serial.print("Encoder A Count: ");
-    Serial.print(encoder_A_count/2);
+    Serial.print(Current_Encoder_A_Count/2);
     Serial.print(", Encoder B Count: ");
-    Serial.println(encoder_B_count/2);
+    Serial.println(Current_Encoder_B_Count/2);
   
-/*
-      // Move Y motor based on encoder_A_count
-    if (encoder_A_count > 0) {
-      moveMotor(Y_DIR_PIN, Y_STEP_PIN, -motor_steps_A); // Move Y motor counter-clockwise - right up
-    } else if (encoder_A_count < 0) {
-      moveMotor(Y_DIR_PIN, Y_STEP_PIN, motor_steps_A); // Move Y motor clockwise - right down
-    }
-  
-    // Move X motor based on encoder_B_count
-    if (encoder_B_count > 0) {
-      moveMotor(X_DIR_PIN, X_STEP_PIN, -motor_steps_B); // Move X motor counter-clockwise - left down
-    } else if (encoder_B_count < 0) {
-      moveMotor(X_DIR_PIN, X_STEP_PIN, motor_steps_B); // Move X motor clockwise - left up
-    }
-              
+  */  
+            
+  buttonState12 = digitalRead(buttonPin12);
+  buttonState9 = digitalRead(buttonPin9);
+   if (buttonState12 == LOW) {
+    Serial.println("Button servo!");
+        static int test = 0;  // Variable to keep track of the current direction of the servo
+        if (test == 0) {
+           myservo.write(40);
+           delay(500);
+           test = 1;
+           } 
+           else 
+           {
+               myservo.write(120);
+               delay(500);
+               test = 0;
+               }
+           delay(50); // Optional delay to avoid rapid servo movements due to button's mechanical noise
+     }
+ 
 
-              // Print encoder values
-    Serial.print("Encoder A Count: ");
-    Serial.print(encoder_A_count/2);
-    Serial.print(", Encoder B Count: ");
-    Serial.println(encoder_B_count/2);
-    
-      // read button states and move motors accordingly
-          for (int i = 0; i < numButtons; i++) {
-            int state = digitalRead(buttonPins[i]);
-            if (i == 0) { 
-                  // If the button is pressed (LOW), change the direction of the servo and set 'test' variable accordingly
-                  if (buttonState == HIGH) {
-                    static int test = 0;  // Variable to keep track of the current direction of the servo
-                    if (test == 0) {
-                      myservo.write(40);
-                        delay(500);
-                      test = 1;
-                    } else {
-                      myservo.write(120);
-                        delay(500);
-                      test = 0;
-                    }
-                    delay(50); // Optional delay to avoid rapid servo movements due to button's mechanical noise
-                  }
-              }
-              
-              else if (i == 0) {
-                timerStart = millis();// box
+  // Check if button 9 is pressed
+  if (buttonState9 == LOW) {
+    Serial.println("Button 9 is pressed!");
+    timerStart = millis();// box
                   if (b == 0) {
                        moveto(0 ,0);
                        moveto(30 ,0);
@@ -685,28 +692,11 @@ void loop(){
                       moveto(10 ,-10);
                       moveto(10 ,0);
                       moveto(0 ,0);
-                      b = 0;  
+                      b = 0; 
                     }
-                    else {
-                      Serial.println("Invalid value of i");
-                   }
-                }
-                else {
-                    Serial.println("end of if");
-                  }
-              }
-              
-            
-*/
-     
+        }
+
 }
-
-
-
-
-
-
-
         
 
 
