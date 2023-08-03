@@ -5,17 +5,13 @@
 #include <stdio.h>
 #include <time.h>
 #include <Servo.h>
+#include <Arduino.h>
 
 // pins for motors:
-
 #define X_DIR_PIN 2
-
 #define X_STEP_PIN 5
-
 #define Y_DIR_PIN 3
-
 #define Y_STEP_PIN 6
-
 #define STEPS_PER_REVOLUTION 200
 
 //------------------------------------------------------------------------------
@@ -51,7 +47,7 @@ int xDirection = 1;
 
 int yDirection = 1;
 
-const int buttonPins[] = {12, 9, A2, A3, 10, 11}; // define button pins
+const int buttonPins[] = {12, 13}; // define button pins
 
 const int numButtons = sizeof(buttonPins) / sizeof(buttonPins[0]); // get the number of buttons
 //------------------------------------------------------------------------------
@@ -99,6 +95,57 @@ int lenMin = -13000;  // length min of the belt
 long lenCountx = 0;
 long lenCounty = 0;
 //------------------------------------------------------------------------------
+//code for encoders:
+const int ENCODER_A_BIT_0 = 11;
+const int ENCODER_A_BIT_1 = 10;
+const int ENCODER_B_BIT_0 = A2;
+const int ENCODER_B_BIT_1 = A3;
+
+int16_t encoder_A_count = 0;
+int16_t encoder_B_count = 0;
+int rangLimit = 100;
+
+int readEncoder(int bit0, int bit1) {
+  return (digitalRead(bit0) << 1) | digitalRead(bit1);
+}
+
+void readEncoders() {
+  static int old_encoder_A_state = readEncoder(ENCODER_A_BIT_0, ENCODER_A_BIT_1);
+  static int old_encoder_B_state = readEncoder(ENCODER_B_BIT_0, ENCODER_B_BIT_1);
+
+  int new_encoder_A_state = readEncoder(ENCODER_A_BIT_0, ENCODER_A_BIT_1);
+  int new_encoder_B_state = readEncoder(ENCODER_B_BIT_0, ENCODER_B_BIT_1);
+
+  if (new_encoder_A_state != old_encoder_A_state) {
+    if ((old_encoder_A_state == 0b01 && new_encoder_A_state == 0b00) || (old_encoder_A_state == 0b10 && new_encoder_A_state == 0b11)) {
+      if (encoder_A_count < rangLimit) {
+        encoder_A_count++;
+      }
+    } else if ((old_encoder_A_state == 0b00 && new_encoder_A_state == 0b01) || (old_encoder_A_state == 0b11 && new_encoder_A_state == 0b10)) {
+      if (encoder_A_count > -rangLimit) {
+        encoder_A_count--;
+      }
+    }
+    old_encoder_A_state = new_encoder_A_state;
+  }
+
+  if (new_encoder_B_state != old_encoder_B_state) {
+    if ((old_encoder_B_state == 0b01 && new_encoder_B_state == 0b00) || (old_encoder_B_state == 0b10 && new_encoder_B_state == 0b11)) {
+      if (encoder_B_count < rangLimit) {
+        encoder_B_count++;
+      }
+    } else if ((old_encoder_B_state == 0b00 && new_encoder_B_state == 0b01) || (old_encoder_B_state == 0b11 && new_encoder_B_state == 0b10)) {
+      if (encoder_B_count > -rangLimit) {
+        encoder_B_count--;
+      }
+    }
+    old_encoder_B_state = new_encoder_B_state;
+  }
+}
+
+
+//------------------------------------------------------------------------------
+
 // parameters for manual coordinates:
 long disx = 0;
 long disy = 0;
@@ -472,12 +519,20 @@ void executeCode() {
 void setup() {
   Serial.begin(BAUD);
   Serial.println("Booting...");
+  // motors:
   pinMode(Y_DIR_PIN, OUTPUT);
   pinMode(Y_STEP_PIN, OUTPUT);
   pinMode(X_DIR_PIN, OUTPUT);
   pinMode(X_STEP_PIN, OUTPUT);
+  // homing knobs:
   pinMode(LS_LEFT_PIN, INPUT_PULLUP);
   pinMode(LS_RIGHT_PIN, INPUT_PULLUP);
+  //encoders:
+  pinMode(ENCODER_A_BIT_0, INPUT_PULLUP);
+  pinMode(ENCODER_A_BIT_1, INPUT_PULLUP);
+  pinMode(ENCODER_B_BIT_0, INPUT_PULLUP);
+  pinMode(ENCODER_B_BIT_1, INPUT_PULLUP); 
+   
   Serial.println("Booting complete, start homing...");
   myservo.attach(A5);  // attaches the servo on pin A5 to the servo object
 
@@ -507,7 +562,7 @@ void setup() {
 //------------------------------------------------------------------------------
 
 void loop(){
-  
+      
      //checks for inactivity = button pressing if not - start a timer of 1 minute 
     if (millis() - timerStart >= timerDuration) {
     // Timer duration reached, execute the code
@@ -516,74 +571,36 @@ void loop(){
     timerStart = millis();
   }
 
-    //sendRandomCoordinates(0,30,-30,30);
+  readEncoders();
+
+  int motor_steps_A = map(encoder_A_count, -100, 100, -stepsPerMotor, stepsPerMotor) / 2;
+  int motor_steps_B = map(encoder_B_count, -100, 100, -stepsPerMotor, stepsPerMotor) / 2;
+
+    // Move Y motor based on encoder_A_count
+    if (encoder_A_count > 0) {
+      moveMotor(Y_DIR_PIN, Y_STEP_PIN, -motor_steps_A); // Move Y motor counter-clockwise - right up
+    } else if (encoder_A_count < 0) {
+      moveMotor(Y_DIR_PIN, Y_STEP_PIN, motor_steps_A); // Move Y motor clockwise - right down
+    }
+  
+    // Move X motor based on encoder_B_count
+    if (encoder_B_count > 0) {
+      moveMotor(X_DIR_PIN, X_STEP_PIN, -motor_steps_B); // Move X motor counter-clockwise - left down
+    } else if (encoder_B_count < 0) {
+      moveMotor(X_DIR_PIN, X_STEP_PIN, motor_steps_B); // Move X motor clockwise - left up
+    }
+              
+
+              // Print encoder values
+    Serial.print("Encoder A Count: ");
+    Serial.print(encoder_A_count/2);
+    Serial.print(", Encoder B Count: ");
+    Serial.println(encoder_B_count/2);
     /*
-    int lenMax = 2500; // length max of the belt
-    int lenMin = -2500;  // length min of the belt
-    long lenCountx = 0;
-    long lenCounty = 0;
-    
-     */
-
-      
-
-      
-    
       // read button states and move motors accordingly
           for (int i = 0; i < numButtons; i++) {
             int state = digitalRead(buttonPins[i]);
-            if (state == LOW) {
-              if (i == 5) {
-                timerStart = millis();
-                if (lenCounty < lenMax ){
-                  moveMotor(Y_DIR_PIN, Y_STEP_PIN, -stepsPerMotor); // move Y motor counter-clockwise - right up 
-                  lenCounty = lenCounty + 1;
-                  Serial.println(lenCounty);
-                  }
-                else {
-                  Serial.println("Max y up");
-                  }
-              } 
-              
-              else if (i == 4) {
-                timerStart = millis();
-                if (lenCounty > lenMin){
-                  moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor); // move Y motor clockwise - right down 
-                  lenCounty = lenCounty - 1;
-                  Serial.println(lenCounty);
-                  }
-                else {
-                  Serial.println("Max y down");
-                  }
-              } 
-
-              else if (i == 3) {
-                timerStart = millis();
-                if (lenCountx > lenMin ){
-                  moveMotor(X_DIR_PIN, X_STEP_PIN, -stepsPerMotor); // move X motor counter-clockwise -left down
-                  lenCountx = lenCountx - 1;
-                  Serial.println(lenCountx);
-                  }
-                  else {
-                    Serial.println("Max x down");
-                  }
-              } 
-              
-              else if (i == 2) {
-                timerStart = millis();
-                if (lenCountx < lenMax ){
-                  moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor); // move X motor clockwise - left up 
-                  lenCountx = lenCountx + 1;
-                  Serial.println(lenCountx);
-                  }
-                  else {
-                    Serial.println("Max x up");
-                  }
-              }
-              
-              else if (i == 0) { 
-
-             
+            if (i == 0) { 
                   // If the button is pressed (LOW), change the direction of the servo and set 'test' variable accordingly
                   if (buttonState == HIGH) {
                     static int test = 0;  // Variable to keep track of the current direction of the servo
@@ -598,11 +615,9 @@ void loop(){
                     }
                     delay(50); // Optional delay to avoid rapid servo movements due to button's mechanical noise
                   }
-
-      
-            }
+              }
               
-              else if (i == 1) {
+              else if (i == 0) {
                 timerStart = millis();// box
                   if (b == 0) {
                        moveto(0 ,0);
@@ -613,7 +628,8 @@ void loop(){
                        moveto(30 ,-30);
                        moveto(30 ,0);
                        moveto(0 ,0);
-                       b = 1;                   }
+                       b = 1;                  
+                       }
                     else if (b == 1) {
                       moveto(0 ,0);
                       moveto(20 ,0);
@@ -640,9 +656,22 @@ void loop(){
                       Serial.println("Invalid value of i");
                    }
                 }
+                else {
+                    Serial.println("end of if");
+                  }
               }
-            }
-          }
+              
+            
+*/
+     
+}
+
+
+
+
+
+
+
         
         void moveMotor(int dirPin, int stepPin, int steps) {
           digitalWrite(dirPin, steps > 0 ? HIGH : LOW); // set motor direction based on sign of steps
