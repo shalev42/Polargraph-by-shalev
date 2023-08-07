@@ -17,8 +17,8 @@
 //------------------------------------------------------------------------------
 // settings for the movment of the motors:
 
-const int SpeedOFMotors = 1000; // set speed each motor movement
-const int stepsPerMotor = 10; // set the number of steps for each motor movement
+const int SpeedOFMotors = 700; // set speed each motor movement
+const int stepsPerMotor = 5; // set the number of steps for each motor movement
 //------------------------------------------------------------------------------
 
 #define X_SEPARATION  1300    //The horizontal distance above the two ropes mm       
