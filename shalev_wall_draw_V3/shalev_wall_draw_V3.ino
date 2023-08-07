@@ -472,7 +472,7 @@ void moveMotor(int dirPin, int stepPin, int steps, bool clockwise) {
   }
 }
 //------------------------------------------------------------------------------
-void executeCode() {
+void randomDrawing() {
   // Code to be executed after one minute
   if (c == 0) {
     moveto(0 ,0);
@@ -598,7 +598,7 @@ void loop(){
      //checks for inactivity = button pressing if not - start a timer of 1 minute 
     if (millis() - timerStart >= timerDuration) {
     // Timer duration reached, execute the code
-    executeCode();
+    randomDrawing();
     // Reset the timer
     timerStart = millis();
   }
