@@ -111,6 +111,9 @@ byte New_Encoder_B_Read = 0; // new 2 bits read from second encoder
 int16_t Current_Encoder_B_Count = 0;// serial_printed and/or display 
 int16_t Old_Encoder_B_Count = 0;// for later use
 
+int Last_Pulse_R = 0;
+int Last_Pulse_L = 0;
+int Rate = 10;
 
 uint32_t Current_Time = 0   ;
 
@@ -466,7 +469,7 @@ void moveMotor(int dirPin, int stepPin, int steps, bool clockwise) {
   digitalWrite(dirPin, clockwise ? HIGH : LOW); // set motor direction
   for(int i = 0; i < steps; i++) {
     digitalWrite(stepPin, HIGH);
-    delayMicroseconds(SpeedOFMotors);
+    delayMicroseconds(10);
     digitalWrite(stepPin, LOW);
     delayMicroseconds(SpeedOFMotors);
   }
