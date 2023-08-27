@@ -631,14 +631,14 @@ void loop(){
   Last_Encoder_B_Count = Current_Encoder_B_Count;
 
 
-  /*
+
    // Print encoder values
     Serial.print("Encoder A Count: ");
     Serial.print(Current_Encoder_A_Count/2);
     Serial.print(", Encoder B Count: ");
     Serial.println(Current_Encoder_B_Count/2);
   
-  */  
+ 
             
   buttonState12 = digitalRead(buttonPin12);
   buttonState9 = digitalRead(buttonPin9);
