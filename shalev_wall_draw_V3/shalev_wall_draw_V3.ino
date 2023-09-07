@@ -178,13 +178,14 @@ void loop() {
   Update_Encoder_A_Count();
   Update_Encoder_B_Count();
   
-  Current_Encoder_A_Count = destPosition1 ;
-  Current_Encoder_B_Count = destPosition2 ;
-  
+  // Update destPosition1 and destPosition2 with current encoder counts
+  destPosition1 = Current_Encoder_A_Count;
+  destPosition2 = Current_Encoder_B_Count;
+
   // Example usage: Move to new position if not reached yet
   if (counter_x != destPosition1 || counter_y != destPosition2) {
     move(destPosition1, destPosition2);
   }
+}
 
   
-}
