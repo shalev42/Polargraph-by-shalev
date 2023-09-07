@@ -647,7 +647,7 @@ void setup() {
 
   //line_safe(0 ,100);
   Serial.println("homing done");
-  
+
 
 
   //moveto(0 ,0);
@@ -703,22 +703,22 @@ void loop() {
   if (debouncerButton1.fell() || debouncerButton2.fell()) {
     Serial.println("Button pressed!");
     
-  // Example usage: Move to new position if not reached yet
-  if (abs(destPosition1 - Current_Encoder_A_Count) > positionTolerance) {
-    moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor * (destPosition1 - Current_Encoder_A_Count > 0 ? 1 : -1));
-  }
-  
-  if (abs(destPosition2 - Current_Encoder_B_Count) > positionTolerance) {
-    moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor * (destPosition2 - Current_Encoder_B_Count > 0 ? 1 : -1));
-  }
+//  // Example usage: Move to new position if not reached yet
+//  if (abs(destPosition1 - Current_Encoder_A_Count) > positionTolerance) {
+//    moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor * (destPosition1 - Current_Encoder_A_Count > 0 ? 1 : -1));
+//  }
+//  
+//  if (abs(destPosition2 - Current_Encoder_B_Count) > positionTolerance) {
+//    moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor * (destPosition2 - Current_Encoder_B_Count > 0 ? 1 : -1));
+//  }
 
-
+  }  
   //   // Print encoder values
     Serial.print("Encoder A Count: ");
     Serial.print(Current_Encoder_A_Count);
     Serial.print(", Encoder B Count: ");
     Serial.println(Current_Encoder_B_Count);
-  }
+  
 }
   
 //      
