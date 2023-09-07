@@ -666,105 +666,53 @@ int Last_Encoder_B_Count = Current_Encoder_B_Count;
 void loop() {
   Update_Encoder_A_Count();
   Update_Encoder_B_Count();
-
-  // Update destPosition1 and destPosition2 with current encoder counts
-  destPosition1 = Current_Encoder_A_Count;
-  destPosition2 = Current_Encoder_B_Count;
-
-  // Calculate the new positions based on the encoder counts
-  int new_x = destPosition1;
-  int new_y = destPosition2;
-
-  // Check if the new positions are within the bounding box
-  if (new_x < min_x) new_x = min_x;
-  if (new_x > max_x) new_x = max_x;
-  if (new_y < min_y) new_y = min_y;
-  if (new_y > max_y) new_y = max_y;
-
-  // Check if the encoder counts have reached the maximum values
-  if (Current_Encoder_A_Count >= max_x) {
-    Current_Encoder_A_Count = max_x;
-  }
-  if (Current_Encoder_B_Count >= max_y) {
-    Current_Encoder_B_Count = max_y;
-  }
-  if (Current_Encoder_A_Count <= min_x) {
-    Current_Encoder_A_Count = min_x;
-  }
-  if (Current_Encoder_B_Count <= min_y) {
-    Current_Encoder_B_Count = min_y;
-  }  
-
-  // Update button debouncers
-  debouncerButton1.update();
-  debouncerButton2.update();
-
-  // Check if button 1 is pressed
-  if (debouncerButton1.fell() || debouncerButton2.fell()) {
-    Serial.println("Button pressed!");
-    
-//  // Example usage: Move to new position if not reached yet
-//  if (abs(destPosition1 - Current_Encoder_A_Count) > positionTolerance) {
-//    moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor * (destPosition1 - Current_Encoder_A_Count > 0 ? 1 : -1));
-//  }
-//  
-//  if (abs(destPosition2 - Current_Encoder_B_Count) > positionTolerance) {
-//    moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor * (destPosition2 - Current_Encoder_B_Count > 0 ? 1 : -1));
-//  }
-
-  }  
-  //   // Print encoder values
+  
+    //   // Print encoder values
     Serial.print("Encoder A Count: ");
     Serial.print(Current_Encoder_A_Count);
     Serial.print(", Encoder B Count: ");
     Serial.println(Current_Encoder_B_Count);
   
+//
+//  // Update destPosition1 and destPosition2 with current encoder counts
+//  destPosition1 = Current_Encoder_A_Count;
+//  destPosition2 = Current_Encoder_B_Count;
+//
+//  // Calculate the new positions based on the encoder counts
+//  int new_x = destPosition1;
+//  int new_y = destPosition2;
+//
+//  // Check if the new positions are within the bounding box
+//  if (new_x < min_x) new_x = min_x;
+//  if (new_x > max_x) new_x = max_x;
+//  if (new_y < min_y) new_y = min_y;
+//  if (new_y > max_y) new_y = max_y;
+//
+//  // Check if the encoder counts have reached the maximum values
+//  if (Current_Encoder_A_Count >= max_x) {
+//    Current_Encoder_A_Count = max_x;
+//  }
+//  if (Current_Encoder_B_Count >= max_y) {
+//    Current_Encoder_B_Count = max_y;
+//  }
+//  if (Current_Encoder_A_Count <= min_x) {
+//    Current_Encoder_A_Count = min_x;
+//  }
+//  if (Current_Encoder_B_Count <= min_y) {
+//    Current_Encoder_B_Count = min_y;
+//  }  
+//
+//  // Update button debouncers
+//  debouncerButton1.update();
+//  debouncerButton2.update();
+//
+////  // Check if button 1 is pressed
+////  if (debouncerButton1.fell() || debouncerButton2.fell()) {
+////    Serial.println("Button pressed!");
+////  }  
+
 }
   
-//      
-//     //checks for inactivity = button pressing if not - start a timer of 1 minute 
-//    if (millis() - timerStart >= timerDuration) {
-//    // Timer duration reached, execute the code
-//    randomDrawing();
-//    // Reset the timer
-//    timerStart = millis();
-//  }
-// // Update encoders if debounce interval has passed
-//    unsigned long currentMillis = millis();
-//    if (currentMillis - lastEncoderUpdateTime >= encoderDebounceInterval) {
-//        Update_Encoder_A_Count();
-//        Update_Encoder_B_Count();
-//        lastEncoderUpdateTime = currentMillis;
-//    }
-//
-//    if (abs(Current_Encoder_A_Count - destEncoderCountA) > positionTolerance ||
-//    abs(Current_Encoder_B_Count - destEncoderCountB) > positionTolerance) {
-//  moveToDestination(Current_Encoder_A_Count, Current_Encoder_B_Count); // Your function to move motors to the destination
-//}
-//
-//
-////        
-////  // Check if the encoder count increased by one step
-////  if (Current_Encoder_A_Count > Last_Encoder_A_Count) {
-////    // Move Y motor counter-clockwise - right up by one step
-////    moveMotor(Y_DIR_PIN, Y_STEP_PIN, -stepsPerMotor);
-////  } else if (Current_Encoder_A_Count < Last_Encoder_A_Count ) {
-////    // Move Y motor clockwise - right down by one step
-////    moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor);
-////  }
-////   Last_Encoder_A_Count = Current_Encoder_A_Count;
-////   
-////  // Check if the encoder count increased by one step
-////  if (Current_Encoder_B_Count > Last_Encoder_B_Count) {
-////    // Move X motor counter-clockwise - right up by one step
-////    moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor);
-////  } else if (Current_Encoder_B_Count < Last_Encoder_B_Count) {
-////    // Move X motor clockwise - right down by one step
-////    moveMotor(X_DIR_PIN, X_STEP_PIN, -stepsPerMotor);
-////  }
-////  Last_Encoder_B_Count = Current_Encoder_B_Count;
-//
-//
 //
 //   // Print encoder values
 //    Serial.print("Encoder A Count: ");
@@ -794,46 +742,6 @@ void loop() {
 //     }
 // 
 //
-//  // Check if button 9 is pressed
-//  if (buttonState9 == LOW) {
-//    Serial.println("Button 9 is pressed!");
-//    timerStart = millis();// box
-//                  if (b == 0) {
-//                       moveto(0 ,0);
-//                       moveto(30 ,0);
-//                       moveto(30 ,30);
-//                       moveto(-30 ,30);
-//                       moveto(-30 ,-30);
-//                       moveto(30 ,-30);
-//                       moveto(30 ,0);
-//                       moveto(0 ,0);
-//                       b = 1;                  
-//                       }
-//                    else if (b == 1) {
-//                      moveto(0 ,0);
-//                      moveto(20 ,0);
-//                      moveto(20 ,20);
-//                      moveto(-20 ,20);
-//                      moveto(-20 ,-20);
-//                      moveto(20 ,-20);
-//                      moveto(20 ,0);
-//                      moveto(0 ,0);
-//                      b = 2;  
-//                    }
-//                    else if (b == 2) {
-//                      moveto(0 ,0);
-//                      moveto(10 ,0);
-//                      moveto(10 ,10);
-//                      moveto(-10 ,10);
-//                      moveto(-10 ,-10);
-//                      moveto(10 ,-10);
-//                      moveto(10 ,0);
-//                      moveto(0 ,0);
-//                      b = 0; 
-//                    }
-//        }
-
-
         
 
 
