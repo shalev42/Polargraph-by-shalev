@@ -163,8 +163,8 @@ void setup() {
   Current_Time = millis();
   
   // Homing switches
-  homing(X_DIR_PIN, homingSwitchXPin, X_STEP_PIN, current_x);
-  homing(Y_DIR_PIN, homingSwitchYPin, Y_STEP_PIN, current_y);
+  //homing(X_DIR_PIN, homingSwitchXPin, X_STEP_PIN, current_x);
+  //homing(Y_DIR_PIN, homingSwitchYPin, Y_STEP_PIN, current_y);
   
   //move(100,300);
   //move(200,100);
@@ -182,10 +182,32 @@ void loop() {
   destPosition1 = Current_Encoder_A_Count;
   destPosition2 = Current_Encoder_B_Count;
 
+  // Bounding box limits
+  int min_x = 0;     // Adjust the minimum X-axis coordinate
+  int max_x = 20;  // Adjust the maximum X-axis coordinate
+  int min_y = 0;     // Adjust the minimum Y-axis coordinate
+  int max_y = 20;  // Adjust the maximum Y-axis coordinate
+
+  // Calculate the new positions based on the encoder counts
+  int new_x = destPosition1;
+  int new_y = destPosition2;
+
+  // Check if the new positions are within the bounding box
+  if (new_x < min_x) new_x = min_x;
+  if (new_x > max_x) new_x = max_x;
+  if (new_y < min_y) new_y = min_y;
+  if (new_y > max_y) new_y = max_y;
+
+  // Check if the encoder counts have reached the maximum values
+  if (Current_Encoder_A_Count >= max_x) {
+    Current_Encoder_A_Count = max_x;
+  }
+  if (Current_Encoder_B_Count >= max_y) {
+    Current_Encoder_B_Count = max_y;
+  }
+
   // Example usage: Move to new position if not reached yet
-  if (counter_x != destPosition1 || counter_y != destPosition2) {
-    move(destPosition1, destPosition2);
+  if (counter_x != new_x || counter_y != new_y) {
+    move(new_x, new_y);
   }
 }
-
-  
