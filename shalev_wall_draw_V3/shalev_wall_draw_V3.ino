@@ -1,11 +1,11 @@
 // polargraph code edited by shalev: 
 
 //libraries for us to use in this code: (compatable on pi)
-#include <stdlib.h>
-#include <stdio.h>
+
 #include <time.h>
 #include <Servo.h>
 #include <Arduino.h>
+#include <Bounce2.h> // Include the Bounce2 library
 
 // pins for motors:
 #define X_DIR_PIN 2
@@ -17,8 +17,8 @@
 //------------------------------------------------------------------------------
 // settings for the movment of the motors:
 
-const int SpeedOFMotors = 700; // set speed each motor movement
-const int stepsPerMotor = 5; // set the number of steps for each motor movement
+const int SpeedOFMotors = 1200; // set speed each motor movement
+const int stepsPerMotor = 20; // set the number of steps for each motor movement
 //------------------------------------------------------------------------------
 
 #define X_SEPARATION  1300    //The horizontal distance above the two ropes mm       
@@ -54,6 +54,21 @@ const int buttonPin9 = 9;
 // Variables to store the button states
 int buttonState12 = 0;
 int buttonState9 = 0;
+
+int buttonPin1 = 9; 
+int buttonPin2 = A0; 
+
+// dont touch this stuff: 
+int current_x = 0; // Current X-axis position
+int current_y = 0; // Current Y-axis position
+int counter_x = 0; // Counter for X-axis movement
+int counter_y = 0; // Counter for Y-axis movement
+const int min_x = 0;     // Adjust the minimum X-axis coordinate
+const int min_y = 0;     // Adjust the minimum Y-axis coordinate
+
+// Bounding box limits
+int max_y = 3800;  // Adjust the maximum Y-axis coordinate
+int max_x = 3500;  // Adjust the maximum X-axis coordinate
 //------------------------------------------------------------------------------
 
 // Define constants for motor direction:
@@ -115,6 +130,25 @@ int Last_Pulse_R = 0;
 int Last_Pulse_L = 0;
 int Rate = 10;
 
+const int positionTolerance = 5; // Tolerance in encoder counts
+
+Bounce debouncerButton1 = Bounce(); // Debouncer instance for button 1
+Bounce debouncerButton2 = Bounce(); // Debouncer instance for button 2
+Bounce debouncerEncoderA = Bounce(); // Debouncer instance for encoder A
+Bounce debouncerEncoderB = Bounce(); // Debouncer instance for encoder B
+
+//debounce the encoders:
+unsigned long lastEncoderUpdateTime = 0;
+const unsigned long encoderDebounceInterval = 10; // Adjust as needed
+
+// Global variables for destination encoder counts
+long destEncoderCountA = 0;
+long destEncoderCountB = 0;
+// Declare destPosition1 and destPosition2 at the beginning of your sketch
+int destPosition1 = 0; // Initialize to the current position
+int destPosition2 = 0; // Initi
+
+
 uint32_t Current_Time = 0   ;
 
 int Read_Encoder_A(){
@@ -151,14 +185,19 @@ int Read_Encoder_B(){
     }
 }
 //---------------------------------
-void Update_Encoder_A_Count(){
-  int temp_move = Read_Encoder_A();
-  Current_Encoder_A_Count += temp_move;
+void Update_Encoder_A_Count() {
+  if (debouncerEncoderA.fell() || debouncerEncoderA.rose()) {
+    int temp_move = Read_Encoder_A();
+    Current_Encoder_A_Count += temp_move;
+  }
 }
+
 //---------------------------------
-void Update_Encoder_B_Count(){
-  int temp_move = Read_Encoder_B();
-  Current_Encoder_B_Count += temp_move;
+void Update_Encoder_B_Count() {
+  if (debouncerEncoderB.fell() || debouncerEncoderB.rose()) {
+    int temp_move = Read_Encoder_B();
+    Current_Encoder_B_Count += temp_move;
+  }
 }
 
 
@@ -205,15 +244,10 @@ unsigned long debounceDelay = 50;    // Debounce time in milliseconds
 int test = 0;  // Variable to keep track of the current direction of the servo
 
 //------------------------------------------------------------------------------
-
 struct point { 
-
   float x; 
-
   float y; 
-
   float z; 
-
 };
 //------------------------------------------------------------------------------
 
@@ -453,7 +487,37 @@ void stepMotorLeft() {
   delayMicroseconds(SpeedOFMotors); // Adjust this value to change motor speed
 }
 
+
+
 //------------------------------------------------------------------------------
+void moveToDestination(int dest_x, int dest_y) {
+  // Loop until the current position matches the destination
+  while (counter_x != dest_x || counter_y != dest_y) {
+    // Calculate the direction and steps needed for X and Y
+    int x_diff = dest_x - counter_x;
+    int y_diff = dest_y - counter_y;
+    int x_dir = (x_diff > 0) ? 1 : -1;
+    int y_dir = (y_diff > 0) ? 1 : -1;
+    int x_steps = abs(x_diff);
+    int y_steps = abs(y_diff);
+
+    // Move X-axis if there's remaining distance
+    if (x_steps > 0) {
+      moveMotor(X_DIR_PIN, X_STEP_PIN, x_dir);
+      counter_x += x_dir;
+    }
+
+    // Move Y-axis if there's remaining distance
+    if (y_steps > 0) {
+      moveMotor(Y_DIR_PIN, Y_STEP_PIN, y_dir);
+      counter_y += y_dir;
+    }
+  }
+}
+
+
+//------------------------------------------------------------------------------
+
 // Generate random (x,y) coordinates within the given range and send them to the printer
 void sendRandomCoordinates(int xMin, int xMax, int yMin, int yMax) {
   int x = random(xMin, xMax);
@@ -544,7 +608,7 @@ void moveMotor(int dirPin, int stepPin, int steps) {
 //------------------------------------------------------------------------------
 
 void setup() {
-  Serial.begin(BAUD);
+  Serial.begin(9600);
   Serial.println("Booting...");
   // motors:
   pinMode(Y_DIR_PIN, OUTPUT);
@@ -559,8 +623,11 @@ void setup() {
   pinMode(ENCODER_A_BIT_1, INPUT_PULLUP);
   pinMode(ENCODER_B_BIT_0, INPUT_PULLUP);
   pinMode(ENCODER_B_BIT_1, INPUT_PULLUP); 
-  attachInterrupt(digitalPinToInterrupt(ENCODER_A_BIT_0), Update_Encoder_A_Count, CHANGE);// arduino nano can only D2 and D3 interupt
-  attachInterrupt(digitalPinToInterrupt(ENCODER_A_BIT_1), Update_Encoder_A_Count, CHANGE);// arduino nano can only D2 and D3 interupt
+  // Initialize button debouncers
+  debouncerButton1.attach(buttonPin1);
+  debouncerButton1.interval(50); // Debounce interval in milliseconds
+  debouncerButton2.attach(buttonPin2);
+  debouncerButton2.interval(50); // Debounce interval in milliseconds
 
   // buttons:
   pinMode(buttonPin12, INPUT_PULLUP);
@@ -596,110 +663,177 @@ void setup() {
 int Last_Encoder_A_Count = Current_Encoder_A_Count;
 int Last_Encoder_B_Count = Current_Encoder_B_Count;
 
-void loop(){
-      
-     //checks for inactivity = button pressing if not - start a timer of 1 minute 
-    if (millis() - timerStart >= timerDuration) {
-    // Timer duration reached, execute the code
-    randomDrawing();
-    // Reset the timer
-    timerStart = millis();
+void loop() {
+  Update_Encoder_A_Count();
+  Update_Encoder_B_Count();
+
+  // Update destPosition1 and destPosition2 with current encoder counts
+  destPosition1 = Current_Encoder_A_Count;
+  destPosition2 = Current_Encoder_B_Count;
+
+  // Calculate the new positions based on the encoder counts
+  int new_x = destPosition1;
+  int new_y = destPosition2;
+
+  // Check if the new positions are within the bounding box
+  if (new_x < min_x) new_x = min_x;
+  if (new_x > max_x) new_x = max_x;
+  if (new_y < min_y) new_y = min_y;
+  if (new_y > max_y) new_y = max_y;
+
+  // Check if the encoder counts have reached the maximum values
+  if (Current_Encoder_A_Count >= max_x) {
+    Current_Encoder_A_Count = max_x;
   }
-  Update_Encoder_A_Count();// encoder A is updated by interupt 
-  Update_Encoder_B_Count();// encoder A is updated by interupt 
+  if (Current_Encoder_B_Count >= max_y) {
+    Current_Encoder_B_Count = max_y;
+  }
+  if (Current_Encoder_A_Count <= min_x) {
+    Current_Encoder_A_Count = min_x;
+  }
+  if (Current_Encoder_B_Count <= min_y) {
+    Current_Encoder_B_Count = min_y;
+  }  
+
+  // Update button debouncers
+  debouncerButton1.update();
+  debouncerButton2.update();
+
+  // Check if button 1 is pressed
+  if (debouncerButton1.fell() || debouncerButton2.fell()) {
+    Serial.println("Button pressed!");
+    
+  // Example usage: Move to new position if not reached yet
+  if (abs(destPosition1 - Current_Encoder_A_Count) > positionTolerance) {
+    moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor * (destPosition1 - Current_Encoder_A_Count > 0 ? 1 : -1));
+  }
   
-
-  
-  // Check if the encoder count increased by one step
-  if (Current_Encoder_A_Count > Last_Encoder_A_Count) {
-    // Move Y motor counter-clockwise - right up by one step
-    moveMotor(Y_DIR_PIN, Y_STEP_PIN, -stepsPerMotor);
-  } else if (Current_Encoder_A_Count < Last_Encoder_A_Count ) {
-    // Move Y motor clockwise - right down by one step
-    moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor);
+  if (abs(destPosition2 - Current_Encoder_B_Count) > positionTolerance) {
+    moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor * (destPosition2 - Current_Encoder_B_Count > 0 ? 1 : -1));
   }
-   Last_Encoder_A_Count = Current_Encoder_A_Count;
-   
-  // Check if the encoder count increased by one step
-  if (Current_Encoder_B_Count > Last_Encoder_B_Count) {
-    // Move X motor counter-clockwise - right up by one step
-    moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor);
-  } else if (Current_Encoder_B_Count < Last_Encoder_B_Count) {
-    // Move X motor clockwise - right down by one step
-    moveMotor(X_DIR_PIN, X_STEP_PIN, -stepsPerMotor);
-  }
-  Last_Encoder_B_Count = Current_Encoder_B_Count;
 
 
-
-   // Print encoder values
+  //   // Print encoder values
     Serial.print("Encoder A Count: ");
-    Serial.print(Current_Encoder_A_Count/2);
+    Serial.print(Current_Encoder_A_Count);
     Serial.print(", Encoder B Count: ");
-    Serial.println(Current_Encoder_B_Count/2);
-  
- 
-            
-  buttonState12 = digitalRead(buttonPin12);
-  buttonState9 = digitalRead(buttonPin9);
-   if (buttonState12 == LOW) {
-    Serial.println("Button servo!");
-        static int test = 0;  // Variable to keep track of the current direction of the servo
-        if (test == 0) {
-           myservo.write(40);
-           delay(500);
-           test = 1;
-           } 
-           else 
-           {
-               myservo.write(120);
-               delay(500);
-               test = 0;
-               }
-           delay(50); // Optional delay to avoid rapid servo movements due to button's mechanical noise
-     }
- 
-
-  // Check if button 9 is pressed
-  if (buttonState9 == LOW) {
-    Serial.println("Button 9 is pressed!");
-    timerStart = millis();// box
-                  if (b == 0) {
-                       moveto(0 ,0);
-                       moveto(30 ,0);
-                       moveto(30 ,30);
-                       moveto(-30 ,30);
-                       moveto(-30 ,-30);
-                       moveto(30 ,-30);
-                       moveto(30 ,0);
-                       moveto(0 ,0);
-                       b = 1;                  
-                       }
-                    else if (b == 1) {
-                      moveto(0 ,0);
-                      moveto(20 ,0);
-                      moveto(20 ,20);
-                      moveto(-20 ,20);
-                      moveto(-20 ,-20);
-                      moveto(20 ,-20);
-                      moveto(20 ,0);
-                      moveto(0 ,0);
-                      b = 2;  
-                    }
-                    else if (b == 2) {
-                      moveto(0 ,0);
-                      moveto(10 ,0);
-                      moveto(10 ,10);
-                      moveto(-10 ,10);
-                      moveto(-10 ,-10);
-                      moveto(10 ,-10);
-                      moveto(10 ,0);
-                      moveto(0 ,0);
-                      b = 0; 
-                    }
-        }
-
+    Serial.println(Current_Encoder_B_Count);
+  }
 }
+  
+//      
+//     //checks for inactivity = button pressing if not - start a timer of 1 minute 
+//    if (millis() - timerStart >= timerDuration) {
+//    // Timer duration reached, execute the code
+//    randomDrawing();
+//    // Reset the timer
+//    timerStart = millis();
+//  }
+// // Update encoders if debounce interval has passed
+//    unsigned long currentMillis = millis();
+//    if (currentMillis - lastEncoderUpdateTime >= encoderDebounceInterval) {
+//        Update_Encoder_A_Count();
+//        Update_Encoder_B_Count();
+//        lastEncoderUpdateTime = currentMillis;
+//    }
+//
+//    if (abs(Current_Encoder_A_Count - destEncoderCountA) > positionTolerance ||
+//    abs(Current_Encoder_B_Count - destEncoderCountB) > positionTolerance) {
+//  moveToDestination(Current_Encoder_A_Count, Current_Encoder_B_Count); // Your function to move motors to the destination
+//}
+//
+//
+////        
+////  // Check if the encoder count increased by one step
+////  if (Current_Encoder_A_Count > Last_Encoder_A_Count) {
+////    // Move Y motor counter-clockwise - right up by one step
+////    moveMotor(Y_DIR_PIN, Y_STEP_PIN, -stepsPerMotor);
+////  } else if (Current_Encoder_A_Count < Last_Encoder_A_Count ) {
+////    // Move Y motor clockwise - right down by one step
+////    moveMotor(Y_DIR_PIN, Y_STEP_PIN, stepsPerMotor);
+////  }
+////   Last_Encoder_A_Count = Current_Encoder_A_Count;
+////   
+////  // Check if the encoder count increased by one step
+////  if (Current_Encoder_B_Count > Last_Encoder_B_Count) {
+////    // Move X motor counter-clockwise - right up by one step
+////    moveMotor(X_DIR_PIN, X_STEP_PIN, stepsPerMotor);
+////  } else if (Current_Encoder_B_Count < Last_Encoder_B_Count) {
+////    // Move X motor clockwise - right down by one step
+////    moveMotor(X_DIR_PIN, X_STEP_PIN, -stepsPerMotor);
+////  }
+////  Last_Encoder_B_Count = Current_Encoder_B_Count;
+//
+//
+//
+//   // Print encoder values
+//    Serial.print("Encoder A Count: ");
+//    Serial.print(Current_Encoder_A_Count/2);
+//    Serial.print(", Encoder B Count: ");
+//    Serial.println(Current_Encoder_B_Count/2);
+//  
+// 
+//            
+//  buttonState12 = digitalRead(buttonPin12);
+//  buttonState9 = digitalRead(buttonPin9);
+//   if (buttonState12 == LOW) {
+//    Serial.println("Button servo!");
+//        static int test = 0;  // Variable to keep track of the current direction of the servo
+//        if (test == 0) {
+//           myservo.write(40);
+//           delay(500);
+//           test = 1;
+//           } 
+//           else 
+//           {
+//               myservo.write(120);
+//               delay(500);
+//               test = 0;
+//               }
+//           delay(50); // Optional delay to avoid rapid servo movements due to button's mechanical noise
+//     }
+// 
+//
+//  // Check if button 9 is pressed
+//  if (buttonState9 == LOW) {
+//    Serial.println("Button 9 is pressed!");
+//    timerStart = millis();// box
+//                  if (b == 0) {
+//                       moveto(0 ,0);
+//                       moveto(30 ,0);
+//                       moveto(30 ,30);
+//                       moveto(-30 ,30);
+//                       moveto(-30 ,-30);
+//                       moveto(30 ,-30);
+//                       moveto(30 ,0);
+//                       moveto(0 ,0);
+//                       b = 1;                  
+//                       }
+//                    else if (b == 1) {
+//                      moveto(0 ,0);
+//                      moveto(20 ,0);
+//                      moveto(20 ,20);
+//                      moveto(-20 ,20);
+//                      moveto(-20 ,-20);
+//                      moveto(20 ,-20);
+//                      moveto(20 ,0);
+//                      moveto(0 ,0);
+//                      b = 2;  
+//                    }
+//                    else if (b == 2) {
+//                      moveto(0 ,0);
+//                      moveto(10 ,0);
+//                      moveto(10 ,10);
+//                      moveto(-10 ,10);
+//                      moveto(-10 ,-10);
+//                      moveto(10 ,-10);
+//                      moveto(10 ,0);
+//                      moveto(0 ,0);
+//                      b = 0; 
+//                    }
+//        }
+
+
         
 
 
