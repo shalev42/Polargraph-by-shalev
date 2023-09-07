@@ -17,7 +17,7 @@
 //------------------------------------------------------------------------------
 // settings for the movment of the motors:
 
-const int SpeedOFMotors = 1200; // set speed each motor movement
+const int SpeedOFMotors = 1300; // set speed each motor movement
 const int stepsPerMotor = 20; // set the number of steps for each motor movement
 //------------------------------------------------------------------------------
 
