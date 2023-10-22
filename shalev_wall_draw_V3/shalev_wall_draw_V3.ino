@@ -1,12 +1,18 @@
+#include <Bounce2.h>
 
 #define X_STEP_PIN         5
 #define X_DIR_PIN          2
 #define Y_STEP_PIN         6
 #define Y_DIR_PIN          3
-#define ENCODER_A_BIT_1 (10) // input IO for gray code bit 0 
-#define ENCODER_A_BIT_0 (11) // input IO for gray code bit 1
-#define ENCODER_B_BIT_1 (A2) // input IO for gray code bit 0
-#define ENCODER_B_BIT_0 (A3) // input IO for gray code bit 1
+#define ENCODER_A_BIT_1 (A0) // input IO for gray code bit 0 
+#define ENCODER_A_BIT_0 (9) // input IO for gray code bit 1
+#define ENCODER_B_BIT_1 (A1) // input IO for gray code bit 0
+#define ENCODER_B_BIT_0 (12) // input IO for gray code bit 1
+// cross bits(0-1) for change counting direction (CW<>CCW)
+//pins:
+int buttonPin1 = A2; 
+int buttonPin2 = A3; 
+
 // cross bits(0-1) for change counting direction (CW<>CCW)
 
 int destPosition1 = 5; // Set your desired X-axis destination
@@ -25,9 +31,10 @@ int16_t Old_Encoder_B_Count = 0;// for later use
 
 uint32_t Current_Time = 0   ;
 
-//pins:
-const int homingSwitchXPin = A4; // Pin for X-axis homing switch
-const int homingSwitchYPin = A5; // Pin for Y-axis homing switch
+Bounce debouncerButton1 = Bounce(); // Debouncer instance for button 1
+Bounce debouncerButton2 = Bounce(); // Debouncer instance for button 2
+unsigned long timerStart = 0;
+const unsigned long timerDuration = 1000 *(10000000000); // 1 minute in milliseconds delay between random drawings
 
 const int SpeedOFMotors = 700; // Adjust the value as needed for motor speed
 int max_x = 3500; // Adjust the maximum X-axis coordinate
@@ -153,14 +160,20 @@ void setup() {
   pinMode(X_DIR_PIN, OUTPUT);
   pinMode(Y_STEP_PIN, OUTPUT);
   pinMode(Y_DIR_PIN, OUTPUT);
-  pinMode(homingSwitchXPin, INPUT_PULLUP);
-  pinMode(homingSwitchYPin, INPUT_PULLUP);
     // make encoder IO pulsedup inputs:
   pinMode(ENCODER_A_BIT_0, INPUT_PULLUP);  
   pinMode(ENCODER_A_BIT_1, INPUT_PULLUP);  
   pinMode(ENCODER_B_BIT_0, INPUT_PULLUP);  
   pinMode(ENCODER_B_BIT_1, INPUT_PULLUP);  
+  pinMode(buttonPin1, INPUT_PULLUP);
+  pinMode(buttonPin2, INPUT_PULLUP);
   Current_Time = millis();
+
+  // Initialize button debouncers
+  debouncerButton1.attach(buttonPin1);
+  debouncerButton1.interval(50); // Debounce interval in milliseconds
+  debouncerButton2.attach(buttonPin2);
+  debouncerButton2.interval(50); 
   
   // Homing switches
   //homing(X_DIR_PIN, homingSwitchXPin, X_STEP_PIN, current_x);
@@ -209,4 +222,22 @@ void loop() {
   if (counter_x != new_x || counter_y != new_y) {
     move(new_x * 15, new_y * 15);
   }
+
+    // Update button debouncers
+  debouncerButton1.update();
+  debouncerButton2.update();
+  
+  // Check if button 1 is pressed
+  if (debouncerButton1.fell()|| debouncerButton2.fell()) {
+    Serial.println("Button pressed!");
+  }
+
+    //checks for inactivity = button pressing if not - start a timer of 1 minute 
+    if (millis() - timerStart >= timerDuration) {
+    // Timer duration reached, execute the code
+    //randomDrawing();
+    // Reset the timer
+    timerStart = millis();
+  }
+
 }
