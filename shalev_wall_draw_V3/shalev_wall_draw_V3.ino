@@ -1,4 +1,6 @@
 #include <Bounce2.h>
+#include <Servo.h>
+Servo myservo;
 
 #define X_STEP_PIN         5
 #define X_DIR_PIN          2
@@ -33,6 +35,7 @@ uint32_t Current_Time = 0   ;
 
 Bounce debouncerButton1 = Bounce(); // Debouncer instance for button 1
 Bounce debouncerButton2 = Bounce(); // Debouncer instance for button 2
+int pos = 0; // for servo
 unsigned long timerStart = 0;
 const unsigned long timerDuration = 1000 *(10000000000); // 1 minute in milliseconds delay between random drawings
 
@@ -174,7 +177,8 @@ void setup() {
   debouncerButton1.interval(50); // Debounce interval in milliseconds
   debouncerButton2.attach(buttonPin2);
   debouncerButton2.interval(50); 
-  
+  //servo:
+  myservo.attach(A5);
   // Homing switches
   //homing(X_DIR_PIN, homingSwitchXPin, X_STEP_PIN, current_x);
   //homing(Y_DIR_PIN, homingSwitchYPin, Y_STEP_PIN, current_y);
@@ -228,8 +232,18 @@ void loop() {
   debouncerButton2.update();
   
   // Check if button 1 is pressed
-  if (debouncerButton1.fell()|| debouncerButton2.fell()) {
+  if (debouncerButton1.fell() || debouncerButton2.fell()) {
     Serial.println("Button pressed!");
+    // Toggle between two positions (0 and 90 degrees)
+    if (pos == 0) {
+      myservo.write(90);
+      pos = 90;
+    } else {
+      myservo.write(0);
+      pos = 0;
+    }
+
+
   }
 
     //checks for inactivity = button pressing if not - start a timer of 1 minute 
