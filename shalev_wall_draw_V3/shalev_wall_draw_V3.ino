@@ -5,8 +5,8 @@
 #define Y_DIR_PIN          3
 #define ENCODER_A_BIT_1 (10) // input IO for gray code bit 0 
 #define ENCODER_A_BIT_0 (11) // input IO for gray code bit 1
-#define ENCODER_B_BIT_1 (A3) // input IO for gray code bit 0
-#define ENCODER_B_BIT_0 (A2) // input IO for gray code bit 1
+#define ENCODER_B_BIT_1 (A2) // input IO for gray code bit 0
+#define ENCODER_B_BIT_0 (A3) // input IO for gray code bit 1
 // cross bits(0-1) for change counting direction (CW<>CCW)
 
 int destPosition1 = 5; // Set your desired X-axis destination
@@ -172,7 +172,6 @@ void setup() {
 }
 //---------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------
-
 //---------------------------------------------------------------------------------------------------------
 void loop() {
   Update_Encoder_A_Count();
@@ -183,10 +182,10 @@ void loop() {
   destPosition2 = Current_Encoder_B_Count;
 
   // Bounding box limits
-  int min_x = 0;     // Adjust the minimum X-axis coordinate
-  int max_x = 20;  // Adjust the maximum X-axis coordinate
-  int min_y = 0;     // Adjust the minimum Y-axis coordinate
-  int max_y = 20;  // Adjust the maximum Y-axis coordinate
+  int min_x = -1000;     // Adjust the minimum X-axis coordinate
+  int max_x = 1000;  // Adjust the maximum X-axis coordinate
+  int min_y = -1000;     // Adjust the minimum Y-axis coordinate
+  int max_y = 1000;  // Adjust the maximum Y-axis coordinate
 
   // Calculate the new positions based on the encoder counts
   int new_x = destPosition1;
@@ -208,6 +207,6 @@ void loop() {
 
   // Example usage: Move to new position if not reached yet
   if (counter_x != new_x || counter_y != new_y) {
-    move(new_x, new_y);
+    move(new_x * 15, new_y * 15);
   }
 }
